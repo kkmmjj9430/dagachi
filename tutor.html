@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 한국어 튜터 — 다가치</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .tutor-wrap { max-width: 820px; margin: 0 auto; padding: 48px 24px; }
+    .step-bar { display: flex; align-items: center; gap: 0; margin-bottom: 40px; }
+    .step { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+    .step.active { color: var(--sky); font-weight: 500; }
+    .step.done { color: var(--purple); }
+    .step-num { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex-shrink: 0; }
+    .step.done .step-num { background: var(--purple); border-color: var(--purple); color: #fff; }
+    .step.active .step-num { background: var(--sky); border-color: var(--sky); color: #fff; }
+    .step-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; }
+    .form-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px 28px; margin-bottom: 20px; }
+    .form-card-title { font-size: 16px; font-weight: 600; color: var(--text-dark); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+    .form-card-title span { background: var(--sky-light); color: var(--sky); font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: var(--radius-full); }
+    .chip-group { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chip { padding: 8px 16px; border-radius: var(--radius-full); border: 1.5px solid var(--border); font-size: 13px; color: var(--text-mid); cursor: pointer; transition: all 0.15s; background: var(--white); font-family: inherit; }
+    .chip:hover { border-color: var(--sky); color: var(--sky); }
+    .chip.selected { background: var(--sky-light); border-color: var(--sky); color: var(--sky); font-weight: 500; }
+    .submit-btn { width: 100%; padding: 16px; background: var(--sky); color: #fff; border: none; border-radius: var(--radius-full); font-size: 16px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity 0.2s; margin-top: 8px; }
+    .submit-btn:hover { opacity: 0.88; }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .result-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px 28px; margin-top: 24px; display: none; }
+    .result-card.visible { display: block; }
+    .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border-soft); flex-wrap: wrap; gap: 10px; }
+    .result-header h3 { font-size: 17px; font-weight: 600; color: var(--text-dark); }
+    .result-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+    .result-tag { font-size: 12px; padding: 3px 10px; border-radius: var(--radius-full); }
+    .curriculum-content { font-size: 14px; color: var(--text-mid); line-height: 2; white-space: pre-wrap; }
+    .curriculum-content strong { color: var(--text-dark); font-weight: 600; }
+    .chat-section { margin-top: 28px; border-top: 1px solid var(--border-soft); padding-top: 24px; }
+    .chat-title { font-size: 14px; font-weight: 600; color: var(--text-dark); margin-bottom: 14px; }
+    .chat-messages { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; max-height: 320px; overflow-y: auto; }
+    .msg { max-width: 80%; padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.7; }
+    .msg.user { align-self: flex-end; background: var(--sky); color: #fff; border-radius: 14px 14px 4px 14px; }
+    .msg.ai { align-self: flex-start; background: var(--bg); color: var(--text-mid); border-radius: 14px 14px 14px 4px; border: 1px solid var(--border); }
+    .msg.ai strong { color: var(--text-dark); }
+    .chat-input-row { display: flex; gap: 10px; }
+    .chat-input { flex: 1; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-full); font-size: 14px; font-family: inherit; color: var(--text-dark); background: var(--white); transition: border-color 0.2s; }
+    .chat-input:focus { outline: none; border-color: var(--sky); }
+    .chat-send { padding: 12px 22px; background: var(--sky); color: #fff; border: none; border-radius: var(--radius-full); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity 0.2s; white-space: nowrap; }
+    .chat-send:hover { opacity: 0.88; }
+    .chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+    .typing { display: flex; gap: 5px; align-items: center; padding: 12px 16px; }
+    .typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sky-mid); animation: bounce 1.2s infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">다가치</a>
+    <ul class="nav-links">
+      <li><a href="tutor.html" style="color:var(--sky); font-weight:500;">AI 튜터</a></li>
+      <li><a href="map.html">지원 찾기</a></li>
+      <li><a href="teacher.html">교사 가이드</a></li>
+    </ul>
+    <a href="tutor.html" class="nav-cta">시작하기</a>
+  </nav>
+
+  <div class="page-hero">
+    <div class="hero-badge" style="margin: 0 auto 16px;">
+      <span class="hero-badge-dot"></span>Gemini AI 기반
+    </div>
+    <h1>AI 한국어 튜터</h1>
+    <p>학년·언어권·수준을 입력하면<br>문화 맥락까지 설명하는 맞춤 커리큘럼을 제공합니다</p>
+  </div>
+
+  <div class="tutor-wrap">
+    <div class="step-bar">
+      <div class="step active" id="step1-indicator">
+        <div class="step-num">1</div>
+        <span>학생 정보</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step2-indicator">
+        <div class="step-num">2</div>
+        <span>커리큘럼 생성</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step3-indicator">
+        <div class="step-num">3</div>
+        <span>AI 질문하기</span>
+      </div>
+    </div>
+
+    <div class="form-card" id="step1-card">
+      <div class="form-card-title">학생 정보 입력 <span>Step 1</span></div>
+
+      <div class="form-group">
+        <label class="form-label">학년</label>
+        <div class="chip-group" id="grade-group">
+          <button class="chip" data-val="초등 1~2학년">초등 1~2학년</button>
+          <button class="chip" data-val="초등 3~4학년">초등 3~4학년</button>
+          <button class="chip" data-val="초등 5~6학년">초등 5~6학년</button>
+          <button class="chip" data-val="중학교">중학교</button>
+          <button class="chip" data-val="고등학교">고등학교</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">언어권 (출신 국가)</label>
+        <div class="chip-group" id="lang-group">
+          <button class="chip" data-val="영어">🇺🇸 영어</button>
+          <button class="chip" data-val="베트남어">🇻🇳 베트남어</button>
+          <button class="chip" data-val="중국어">🇨🇳 중국어</button>
+          <button class="chip" data-val="필리핀어">🇵🇭 필리핀어</button>
+          <button class="chip" data-val="캄보디아어">🇰🇭 캄보디아어</button>
+          <button class="chip" data-val="러시아어">🇷🇺 러시아어</button>
+          <button class="chip" data-val="몽골어">🇲🇳 몽골어</button>
+          <button class="chip" data-val="일본어">🇯🇵 일본어</button>
+          <button class="chip" data-val="태국어">🇹🇭 태국어</button>
+          <button class="chip" data-val="네팔어">🇳🇵 네팔어</button>
+          <button class="chip" data-val="기타">기타</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">한국어 수준</label>
+        <div class="chip-group" id="level-group">
+          <button class="chip" data-val="입문 (한국어를 거의 못함)">입문</button>
+          <button class="chip" data-val="초급 (일상 회화 가능)">초급</button>
+          <button class="chip" data-val="중급 (기본 수업 이해 가능)">중급</button>
+          <button class="chip" data-val="고급 (학술 표현 부족)">고급</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">특별히 어려워하는 부분 (선택)</label>
+        <div class="chip-group" id="difficulty-group">
+          <button class="chip" data-val="읽기">읽기</button>
+          <button class="chip" data-val="쓰기">쓰기</button>
+          <button class="chip" data-val="말하기">말하기</button>
+          <button class="chip" data-val="듣기">듣기</button>
+          <button class="chip" data-val="교과서 어휘">교과서 어휘</button>
+          <button class="chip" data-val="문화적 맥락 이해">문화적 맥락 이해</button>
+        </div>
+      </div>
+
+      <button class="submit-btn" id="generate-btn" disabled>맞춤 커리큘럼 생성하기 →</button>
+    </div>
+
+    <div class="result-card" id="result-card">
+      <div class="result-header">
+        <h3>맞춤 한국어 학습 커리큘럼</h3>
+        <div class="result-tags" id="result-tags"></div>
+      </div>
+      <div class="curriculum-content" id="curriculum-content">
+        <div class="typing">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+      <div class="chat-section" id="chat-section" style="display:none;">
+        <div class="chat-title">💬 AI 튜터에게 질문하기</div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" class="chat-input" id="chat-input" placeholder="모국어로 질문해도 됩니다! / You can ask in your native language!" />
+          <button class="chat-send" id="chat-send">전송</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-logo">다가치</div>
+    <div class="footer-text">© 2026 다가치팀</div>
+    <div class="footer-badge">제8회 교육 공공데이터 AI활용대회</div>
+  </footer>
+
+  <script>
+    const API_KEY = 'AIzaSyDVDjNADSd9txAxkIFJ63a2_FpadGaaedE';
+    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+
+    const langMap = {
+      '영어': 'English', '베트남어': 'Vietnamese', '중국어': 'Chinese', '필리핀어': 'Filipino',
+      '캄보디아어': 'Khmer', '러시아어': 'Russian', '몽골어': 'Mongolian',
+      '일본어': 'Japanese', '태국어': 'Thai', '네팔어': 'Nepali', '기타': 'English'
+    };
+
+    const state = { grade: '', lang: '', level: '', difficulty: [] };
+    let chatHistory = [];
+    let systemContext = '';
+
+    function setupSingleChip(groupId, key) {
+      document.getElementById(groupId).querySelectorAll('.chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById(groupId).querySelectorAll('.chip').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          state[key] = btn.dataset.val;
+          checkReady();
+        });
+      });
+    }
+
+    document.getElementById('difficulty-group').querySelectorAll('.chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('selected');
+        const val = btn.dataset.val;
+        if (state.difficulty.includes(val)) {
+          state.difficulty = state.difficulty.filter(v => v !== val);
+        } else {
+          state.difficulty.push(val);
+        }
+      });
+    });
+
+    setupSingleChip('grade-group', 'grade');
+    setupSingleChip('lang-group', 'lang');
+    setupSingleChip('level-group', 'level');
+
+    function checkReady() {
+      document.getElementById('generate-btn').disabled = !(state.grade && state.lang && state.level);
+    }
+
+    document.getElementById('generate-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('generate-btn');
+      btn.disabled = true;
+      btn.textContent = '생성 중...';
+
+      document.getElementById('step1-indicator').classList.replace('active', 'done') || document.getElementById('step1-indicator').classList.add('done');
+      document.getElementById('step1-indicator').classList.remove('active');
+      document.getElementById('step2-indicator').classList.add('active');
+
+      const resultCard = document.getElementById('result-card');
+      resultCard.classList.add('visible');
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      const targetLang = langMap[state.lang] || 'English';
+      const diffText = state.difficulty.length > 0 ? `Difficulty areas: ${state.difficulty.join(', ')}` : '';
+
+      document.getElementById('result-tags').innerHTML = `
+        <span class="result-tag" style="background:var(--sky-light);color:var(--sky);">${state.grade}</span>
+        <span class="result-tag" style="background:var(--purple-light);color:var(--purple);">${state.lang}</span>
+        <span class="result-tag" style="background:#E0F2FE;color:#0284C7;">${state.level.split(' ')[0]}</span>
+      `;
+
+      const prompt = `You are a Korean language education expert for multicultural students in Korea.
+
+Create a personalized Korean learning curriculum for this student.
+CRITICAL: Write the ENTIRE response in ${targetLang}. Do NOT use Korean at all.
+
+Student profile:
+- Grade level: ${state.grade}
+- Native language: ${state.lang}  
+- Korean proficiency: ${state.level}
+${diffText}
+
+Structure your response exactly like this:
+
+📌 Learning Goals
+[2-3 sentences about what this student will achieve]
+
+📚 4-Week Study Plan
+Week 1: [topic + specific activities]
+Week 2: [topic + specific activities]
+Week 3: [topic + specific activities]
+Week 4: [topic + specific activities]
+
+🌏 Cultural Tips for ${state.lang} Speakers
+[3 specific things that confuse ${state.lang} speakers about Korean culture or language]
+
+💡 Start Today
+[2-3 specific activities the student can do right now]
+
+Be warm, encouraging, and use simple language appropriate for the student's level.`;
+
+const levelLang = {
+  '입문 (한국어를 거의 못함)': `Respond entirely in ${targetLang}. Do not use Korean at all.`,
+  '초급 (일상 회화 가능)': `Respond primarily in ${targetLang}. You may add key Korean words in parentheses like 사과(apple).`,
+  '중급 (기본 수업 이해 가능)': `Respond in both Korean and ${targetLang}. Write Korean first, then ${targetLang} translation below.`,
+  '고급 (학술 표현 부족)': `Respond primarily in Korean. Use ${targetLang} only for difficult academic vocabulary.`
+};
+const langInstruction = levelLang[state.level] || `Respond in ${targetLang}.`;
+
+systemContext = `You are a Korean language tutor for a ${state.lang}-speaking student in ${state.grade} with ${state.level} Korean.
+${langInstruction}
+Be warm, patient, and consider the cultural background of ${state.lang} speakers.`;
+      try {
+        const res = await fetch(`${GEMINI_URL}?key=${API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 3000 }
+          })
+        });
+
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received.';
+        document.getElementById('curriculum-content').innerHTML = formatText(text);
+
+        document.getElementById('chat-section').style.display = 'block';
+        document.getElementById('step2-indicator').classList.remove('active');
+        document.getElementById('step2-indicator').classList.add('done');
+        document.getElementById('step3-indicator').classList.add('active');
+
+        chatHistory = [
+          { role: 'user', parts: [{ text: prompt }] },
+          { role: 'model', parts: [{ text }] }
+        ];
+        btn.textContent = '✓ 커리큘럼 생성 완료';
+
+      } catch (err) {
+        document.getElementById('curriculum-content').innerHTML = `<span style="color:#e53e3e">Error: ${err.message}</span>`;
+        btn.disabled = false;
+        btn.textContent = '다시 시도하기';
+      }
+    });
+
+    document.getElementById('chat-send').addEventListener('click', sendChat);
+    document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+
+    async function sendChat() {
+      const input = document.getElementById('chat-input');
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      input.value = '';
+      document.getElementById('chat-send').disabled = true;
+      addMessage('user', msg);
+      const typingEl = addMessage('ai', '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>');
+      chatHistory.push({ role: 'user', parts: [{ text: msg }] });
+
+      try {
+        const res = await fetch(`${GEMINI_URL}?key=${API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemContext }] },
+            contents: chatHistory,
+            generationConfig: { temperature: 0.7, maxOutputTokens: 1500 }
+          })
+        });
+
+        const data = await res.json();
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response.';
+        typingEl.innerHTML = formatText(reply);
+        chatHistory.push({ role: 'model', parts: [{ text: reply }] });
+
+      } catch (err) {
+        typingEl.innerHTML = `<span style="color:#e53e3e">Error: ${err.message}</span>`;
+      }
+
+      document.getElementById('chat-send').disabled = false;
+      input.focus();
+    }
+
+    function addMessage(role, html) {
+      const messages = document.getElementById('chat-messages');
+      const el = document.createElement('div');
+      el.className = `msg ${role}`;
+      el.innerHTML = html;
+      messages.appendChild(el);
+      messages.scrollTop = messages.scrollHeight;
+      return el;
+    }
+
+    function formatText(text) {
+      return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>지원 자원 매칭 — 다가치</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --sky: #38BDF8;
+    --sky-light: #E0F2FE;
+    --sky-dark: #0284C7;
+    --purple: #A78BFA;
+    --purple-light: #EDE9FE;
+    --purple-dark: #7C3AED;
+    --red: #FB7185;
+    --red-light: #FFF1F2;
+    --orange: #FB923C;
+    --orange-light: #FFF7ED;
+    --green: #34D399;
+    --green-light: #ECFDF5;
+    --bg: #F8FAFF;
+    --card: #FFFFFF;
+    --border: #E8EEFA;
+    --text: #1E293B;
+    --text-sub: #64748B;
+    --text-muted: #94A3B8;
+    --shadow: 0 2px 12px rgba(56,189,248,0.10);
+    --shadow-lg: 0 8px 32px rgba(56,189,248,0.15);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* NAV */
+  nav {
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    position: sticky; top: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: space-between; height: 60px;
+  }
+  .nav-logo { font-weight: 700; font-size: 1.2rem; color: var(--sky-dark); text-decoration: none; display: flex; align-items: center; gap: 6px; }
+  .nav-logo span { font-size: 1.4rem; }
+  .nav-links { display: flex; gap: 8px; }
+  .nav-links a { text-decoration: none; color: var(--text-sub); font-size: 0.85rem; font-weight: 500; padding: 6px 14px; border-radius: 20px; transition: all 0.2s; }
+  .nav-links a:hover, .nav-links a.active { background: var(--sky-light); color: var(--sky-dark); }
+
+  /* LAYOUT */
+  .page-wrap { display: grid; grid-template-columns: 380px 1fr; height: calc(100vh - 60px); }
+
+  /* SIDEBAR */
+  .sidebar {
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, var(--sky-light) 0%, var(--purple-light) 100%);
+  }
+  .sidebar-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .sidebar-sub { font-size: 0.82rem; color: var(--text-sub); }
+
+  /* SEARCH */
+  .search-section { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
+  .search-label { font-size: 0.78rem; font-weight: 600; color: var(--text-sub); margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .search-input-wrap { position: relative; }
+  .search-input {
+    width: 100%; padding: 10px 16px 10px 40px;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 0.9rem; font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg); color: var(--text); outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--sky); }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1rem; }
+  .search-btn {
+    width: 100%; margin-top: 8px; padding: 10px;
+    background: linear-gradient(135deg, var(--sky) 0%, var(--purple) 100%);
+    color: white; border: none; border-radius: var(--radius-sm);
+    font-size: 0.88rem; font-weight: 600; cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: opacity 0.2s;
+  }
+  .search-btn:hover { opacity: 0.9; }
+
+  /* FILTER CHIPS */
+  .filter-section { padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); }
+  .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    padding: 5px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 500;
+    cursor: pointer; border: 1.5px solid var(--border); background: white;
+    color: var(--text-sub); transition: all 0.18s;
+  }
+  .chip:hover { border-color: var(--sky); color: var(--sky-dark); }
+  .chip.active { background: var(--sky-light); border-color: var(--sky); color: var(--sky-dark); }
+  .chip.danger.active { background: var(--red-light); border-color: var(--red); color: #BE123C; }
+  .chip.warn.active { background: var(--orange-light); border-color: var(--orange); color: #C2410C; }
+  .chip.safe.active { background: var(--green-light); border-color: var(--green); color: #065F46; }
+
+  /* RESULTS */
+  .results-section { flex: 1; overflow-y: auto; padding: 1rem; }
+  .results-count { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px; }
+  .center-card {
+    background: white; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    padding: 1rem; margin-bottom: 8px; cursor: pointer;
+    transition: all 0.18s; position: relative;
+  }
+  .center-card:hover { border-color: var(--sky); box-shadow: var(--shadow); transform: translateY(-1px); }
+  .center-card.selected { border-color: var(--sky-dark); box-shadow: 0 0 0 3px rgba(56,189,248,0.15); }
+  .center-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+  .center-name { font-size: 0.88rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .risk-badge {
+    flex-shrink: 0; padding: 3px 8px; border-radius: 20px;
+    font-size: 0.7rem; font-weight: 600;
+  }
+  .risk-high { background: var(--red-light); color: #BE123C; }
+  .risk-mid { background: var(--orange-light); color: #C2410C; }
+  .risk-low { background: var(--green-light); color: #065F46; }
+  .center-addr { font-size: 0.78rem; color: var(--text-sub); margin-bottom: 6px; line-height: 1.4; }
+  .center-tel { font-size: 0.78rem; color: var(--sky-dark); font-weight: 500; }
+  .center-sido { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+  /* MAP */
+  #map {
+    width: 100%; height: 100%;
+    background: #f0f4f8;
+  }
+
+  /* LEGEND */
+  .map-legend {
+    position: absolute; bottom: 80px; right: 16px; z-index: 500;
+    background: rgba(255,255,255,0.95); border-radius: var(--radius-sm);
+    padding: 12px 16px; box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    font-size: 0.78rem;
+  }
+  .legend-title { font-weight: 700; color: var(--text); margin-bottom: 8px; font-size: 0.82rem; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; color: var(--text-sub); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+  /* POPUP custom */
+  .leaflet-popup-content-wrapper {
+    border-radius: 12px !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+    border: none !important;
+  }
+  .leaflet-popup-content { margin: 0 !important; min-width: 200px; }
+  .popup-inner { padding: 14px 16px; }
+  .popup-name { font-weight: 700; font-size: 0.9rem; color: var(--text); margin-bottom: 6px; }
+  .popup-addr { font-size: 0.78rem; color: var(--text-sub); margin-bottom: 4px; line-height: 1.4; }
+  .popup-tel { font-size: 0.78rem; color: var(--sky-dark); font-weight: 600; }
+  .popup-risk { margin-top: 8px; padding: 6px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; }
+
+  /* STATS BAR */
+  .stats-bar {
+    background: linear-gradient(135deg, var(--sky-dark) 0%, var(--purple-dark) 100%);
+    color: white; padding: 10px 1.25rem;
+    display: flex; gap: 16px; flex-wrap: wrap;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .stat-item { font-size: 0.78rem; display: flex; align-items: center; gap: 6px; }
+  .stat-num { font-weight: 700; font-size: 1rem; }
+  .stat-label { opacity: 0.85; }
+
+  /* EMPTY */
+  .empty-state { text-align: center; padding: 2rem 1rem; color: var(--text-muted); }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+  .empty-state p { font-size: 0.85rem; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html"><span>🌏</span> 다가치</a>
+  <div class="nav-links">
+    <a href="tutor.html">AI 튜터</a>
+    <a href="map.html" class="active">지원 자원 매칭</a>
+    <a href="teacher.html">교사 가이드</a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">📍 다문화 지원센터 찾기</div>
+      <div class="sidebar-sub">학교 위치 기반 · 공백 위험도 시각화</div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-item"><span class="stat-num" id="total-count">229</span><span class="stat-label">개 센터</span></div>
+      <div class="stat-item"><span class="stat-num" id="high-risk-count">3</span><span class="stat-label">고위험 지역</span></div>
+      <div class="stat-item"><span class="stat-num">201,395</span><span class="stat-label">명 다문화 학생</span></div>
+    </div>
+
+    <div class="search-section">
+      <div class="search-label">지역 검색</div>
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" id="search-input" type="text" placeholder="시도, 센터명, 지역명 검색..."/>
+      </div>
+      <button class="search-btn" onclick="searchCenters()">가까운 센터 찾기</button>
+    </div>
+
+    <div class="filter-section">
+      <div class="search-label" style="margin-bottom:8px">공백 위험도 필터</div>
+      <div class="filter-chips">
+        <div class="chip danger active" onclick="toggleFilter(this,'high')">🔴 고위험 (70점↑)</div>
+        <div class="chip warn active" onclick="toggleFilter(this,'mid')">🟠 중위험 (40~70점)</div>
+        <div class="chip safe active" onclick="toggleFilter(this,'low')">🟢 저위험 (~40점)</div>
+      </div>
+    </div>
+
+    <div class="results-section">
+      <div class="results-count" id="results-count">전체 19개 센터 표시 중</div>
+      <div id="center-list"></div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div style="position:relative; overflow:hidden;">
+    <div id="map"></div>
+    <div class="map-legend">
+      <div class="legend-title">공백 위험도</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FB7185"></div>고위험 (70점 이상)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FB923C"></div>중위험 (40~70점)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#34D399"></div>저위험 (40점 미만)</div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #E8EEFA;">
+        <div class="legend-item"><div class="legend-dot" style="background:#38BDF8;border:2px solid #0284C7"></div>다문화 지원센터</div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #E8EEFA;font-size:10px;color:#94A3B8;line-height:1.6;">
+        <div style="font-weight:600;margin-bottom:4px;color:#64748B;">📋 데이터 출처</div>
+        <div>· 교육부 교육통계서비스<br>「2025 행정구역별 다문화(유형별) 학생수」</div>
+        <div style="margin-top:3px;">· 한국건강가정진흥원<br>「다문화가족지원센터 현황」(2025.09)</div>
+        <div style="margin-top:3px;">· 공백위험도 = 학생수÷기관수<br>(MinMaxScaler 0~100 정규화)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 데이터 ──
+const GAP_DATA = [
+  {sido:'경기도', risk:100.0, students:113752, centers:30},
+  {sido:'제주특별자치도', risk:88.7, students:6858, centers:2},
+  {sido:'인천광역시', risk:75.3, students:29974, centers:10},
+  {sido:'광주광역시', risk:49.2, students:10802, centers:5},
+  {sido:'충청남도', risk:44.1, students:27924, centers:14},
+  {sido:'대전광역시', risk:43.3, students:7882, centers:4},
+  {sido:'세종특별자치시', risk:37.1, students:1772, centers:1},
+  {sido:'서울특별시', risk:33.8, students:43254, centers:26},
+  {sido:'대구광역시', risk:32.9, students:13080, centers:8},
+  {sido:'울산광역시', risk:32.7, students:8142, centers:5},
+  {sido:'경상남도', risk:30.5, students:29630, centers:19},
+  {sido:'전북특별자치도', risk:26.3, students:18488, centers:13},
+  {sido:'충청북도', risk:23.4, students:15948, centers:12},
+  {sido:'경상북도', risk:19.2, students:26316, centers:22},
+  {sido:'부산광역시', risk:17.5, students:15984, centers:14},
+  {sido:'전라남도', risk:13.9, students:22570, centers:22},
+  {sido:'강원특별자치도', risk:0.0, students:10414, centers:18},
+];
+
+const CENTERS = [
+  {name:'서울특별시가족센터', addr:'서울시 중구 소파로4길 6', sido:'서울특별시', tel:'02-318-0227', lat:37.5596, lng:126.9748},
+  {name:'강남구가족센터', addr:'서울시 강남구 개포로 617-8', sido:'서울특별시', tel:'02-3412-2222', lat:37.5172, lng:127.0473},
+  {name:'강동구가족센터', addr:'서울시 강동구 양재대로 1634', sido:'서울특별시', tel:'02-471-0812', lat:37.5301, lng:127.1238},
+  {name:'강북구가족센터', addr:'서울시 강북구 한천로 129길 6', sido:'서울특별시', tel:'02-987-2567', lat:37.6396, lng:127.0253},
+  {name:'강서구가족센터', addr:'서울시 강서구 강서로 5길 50', sido:'서울특별시', tel:'02-2606-2017', lat:37.5509, lng:126.8495},
+  {name:'관악구가족센터', addr:'서울시 관악구 신림로 3길 35', sido:'서울특별시', tel:'02-883-9383', lat:37.4784, lng:126.9516},
+  {name:'광진구가족센터', addr:'서울시 광진구 천호대로 136길 55', sido:'서울특별시', tel:'02-458-0622', lat:37.5384, lng:127.0822},
+  {name:'구로구가족센터', addr:'서울시 구로구 우마2길 35', sido:'서울특별시', tel:'02-869-0317', lat:37.4954, lng:126.8874},
+  {name:'금천구가족센터', addr:'서울시 금천구 금하로 11길 40', sido:'서울특별시', tel:'02-803-7747', lat:37.4569, lng:126.8955},
+  {name:'노원구가족센터', addr:'서울시 노원구 동일로173가길 94', sido:'서울특별시', tel:'02-979-3501', lat:37.6543, lng:127.0568},
+  {name:'도봉구가족센터', addr:'서울시 도봉구 도봉로 552', sido:'서울특별시', tel:'02-995-6800', lat:37.6688, lng:127.0471},
+  {name:'동대문구가족센터', addr:'서울시 동대문구 청계천로 521', sido:'서울특별시', tel:'02-957-0760', lat:37.5744, lng:127.0396},
+  {name:'동작구가족센터', addr:'서울시 동작구 메봉로 37', sido:'서울특별시', tel:'02-599-3301', lat:37.5121, lng:126.9395},
+  {name:'마포구가족센터', addr:'서울시 마포구 양화로 19', sido:'서울특별시', tel:'02-3142-5482', lat:37.5663, lng:126.9014},
+  {name:'서대문구가족센터', addr:'서울시 서대문구 증가로 244', sido:'서울특별시', tel:'02-322-7595', lat:37.5791, lng:126.9368},
+  {name:'서울중구가족센터', addr:'서울시 중구 퇴계로 460', sido:'서울특별시', tel:'02-2279-3891', lat:37.5535, lng:126.9961},
+  {name:'서초구가족센터', addr:'서울시 서초구 방배로10길 10-20', sido:'서울특별시', tel:'02-576-2851', lat:37.4837, lng:127.0324},
+  {name:'성동구가족센터', addr:'서울시 성동구 무학로 6길 9', sido:'서울특별시', tel:'02-3395-9445', lat:37.5633, lng:127.0369},
+  {name:'성북구가족센터', addr:'서울시 성북구 안암로 145', sido:'서울특별시', tel:'02-3290-1660', lat:37.5894, lng:127.0167},
+  {name:'송파구가족센터', addr:'서울시 송파구 양산로 5', sido:'서울특별시', tel:'02-443-3844', lat:37.5145, lng:127.1059},
+  {name:'양천구가족센터', addr:'서울시 양천구 남부순환로 83길 53', sido:'서울특별시', tel:'02-2065-3400', lat:37.517, lng:126.8665},
+  {name:'영등포구가족센터', addr:'서울시 영등포구 영등포로84길 24-5', sido:'서울특별시', tel:'02-2678-2193', lat:37.5264, lng:126.8963},
+  {name:'용산구가족센터', addr:'서울시 용산구 이태원로 224-19', sido:'서울특별시', tel:'02-797-9184', lat:37.5384, lng:126.9654},
+  {name:'은평구가족센터', addr:'서울시 은평구 은평로21가길 15-17', sido:'서울특별시', tel:'02-376-3761', lat:37.6027, lng:126.9291},
+  {name:'종로구가족센터', addr:'서울시 종로구 종로53길 29', sido:'서울특별시', tel:'02-764-3524', lat:37.573, lng:126.9794},
+  {name:'중랑구가족센터', addr:'서울시 중랑구 용마산로 369', sido:'서울특별시', tel:'02-435-4142', lat:37.6063, lng:127.0928},
+  {name:'금정구가족센터', addr:'부산시 금정구 중앙대로 1992', sido:'부산광역시', tel:'051-513-2131', lat:35.2428, lng:129.0927},
+  {name:'기장군가족센터', addr:'부산시 기장군 기장읍 차성로 206', sido:'부산광역시', tel:'051-792-4750', lat:35.2445, lng:129.2145},
+  {name:'동래구가족센터', addr:'부산시 동래구 사직북로63번길 20-7', sido:'부산광역시', tel:'051-506-5766', lat:35.1989, lng:129.0854},
+  {name:'부산동구가족센터', addr:'부산시 동구 초량중로 113', sido:'부산광역시', tel:'051-603-0220', lat:35.1367, lng:129.043},
+  {name:'부산서구가족센터', addr:'부산시 서구 구덕로 127', sido:'부산광역시', tel:'051-241-6200', lat:35.1074, lng:129.0213},
+  {name:'사상구가족센터', addr:'부산시 사상구 가야대로 196번길 51', sido:'부산광역시', tel:'051-328-0042', lat:35.1497, lng:128.9904},
+  {name:'사하구가족센터', addr:'부산시 사하구 하신중앙로 185', sido:'부산광역시', tel:'051-203-4588', lat:35.1049, lng:128.9745},
+  {name:'수영구가족센터', addr:'부산시 수영구 황령산로 7번길 45', sido:'부산광역시', tel:'051-758-3073', lat:35.1453, lng:129.1134},
+  {name:'연제구가족센터', addr:'부산시 연제구 월드컵대로 46번길 11', sido:'부산광역시', tel:'051-851-5002', lat:35.1762, lng:129.0808},
+  {name:'영도구가족센터', addr:'부산시 영도구 하나길 448', sido:'부산광역시', tel:'051-414-9605', lat:35.0911, lng:129.068},
+  {name:'달서구가족센터', addr:'대구시 달서구 야외음당로13길 60', sido:'대구광역시', tel:'053-593-1511', lat:35.8298, lng:128.5328},
+  {name:'달성군가족센터', addr:'대구달성군 현풍읍 테크노중앙대로 231', sido:'대구광역시', tel:'053-636-7390', lat:35.745, lng:128.4311},
+  {name:'대구남구가족센터', addr:'대구시 남구 이천로 10', sido:'대구광역시', tel:'053-475-2324', lat:35.8455, lng:128.5978},
+  {name:'대구동구가족센터', addr:'대구시 동구 안심로 300', sido:'대구광역시', tel:'053-961-2202', lat:35.8857, lng:128.6681},
+  {name:'대구북구가족센터', addr:'대구광역시 북구 대천로 77', sido:'대구광역시', tel:'053-327-2992', lat:35.8859, lng:128.5827},
+  {name:'대구서구가족센터', addr:'대구광역시 서구 서대구로 330', sido:'대구광역시', tel:'053-355-8042', lat:35.8714, lng:128.5591},
+  {name:'대구중구가족센터', addr:'대구시 중구 남산로 53-1', sido:'대구광역시', tel:'053-431-1230', lat:35.868, lng:128.5959},
+  {name:'수성구가족센터', addr:'대구시 수성구 들안로16길 78', sido:'대구광역시', tel:'053-795-4300', lat:35.8585, lng:128.6305},
+  {name:'군위군가족센터', addr:'대구시 군위군 군위읍 중앙길 31-10', sido:'대구광역시', tel:'054-383-2511', lat:36.2399, lng:128.5716},
+  {name:'강화군가족센터', addr:'인천시 강화군 강화읍 북문길 11-1', sido:'인천광역시', tel:'032-933-0980', lat:37.747, lng:126.4879},
+  {name:'계양구가족센터', addr:'인천시 계양구 계양산로 102번길 5', sido:'인천광역시', tel:'032-547-1015', lat:37.5376, lng:126.7376},
+  {name:'남동구가족센터', addr:'인천시 남동구 문화서로62번길 13', sido:'인천광역시', tel:'032-467-3904', lat:37.449, lng:126.731},
+  {name:'미추홀구가족센터', addr:'인천시 미추홀구 낙섬중로 129', sido:'인천광역시', tel:'032-875-2993', lat:37.4638, lng:126.6504},
+  {name:'인천동구가족센터', addr:'인천시 동구 솔빛로 22번길 2', sido:'인천광역시', tel:'032-773-0297', lat:37.474, lng:126.6431},
+  {name:'인천서구가족센터', addr:'인천시 서구 경명대로 693번길 6', sido:'인천광역시', tel:'032-569-1560', lat:37.5455, lng:126.6762},
+  {name:'연수구가족센터', addr:'인천시 연수구 청능대로 109', sido:'인천광역시', tel:'032-851-2730', lat:37.4102, lng:126.678},
+  {name:'옹진군가족센터', addr:'인천시 옹진군 영흥북로 228', sido:'인천광역시', tel:'032-880-1720', lat:37.268, lng:126.504},
+  {name:'인천중구가족센터', addr:'인천시 중구 답동로 23', sido:'인천광역시', tel:'032-763-9337', lat:37.4738, lng:126.6216},
+  {name:'광산구가족센터', addr:'광주시 광산구 광산로 70', sido:'광주광역시', tel:'062-954-8004', lat:35.1396, lng:126.7934},
+  {name:'광주남구가족센터', addr:'광주광역시 남구 효우로 80-1', sido:'광주광역시', tel:'062-351-9337', lat:35.1328, lng:126.9026},
+  {name:'광주동구가족센터', addr:'광주시 동구 남문로 693번길 14', sido:'광주광역시', tel:'062-234-5790', lat:35.1461, lng:126.9231},
+  {name:'광주북구가족센터', addr:'광주시 북구 하서로 195', sido:'광주광역시', tel:'062-363-2963', lat:35.1741, lng:126.9119},
+  {name:'광주서구가족센터', addr:'광주광역시 서구 상무대로 1224번길 18', sido:'광주광역시', tel:'062-369-0072', lat:35.1525, lng:126.8879},
+  {name:'대전광역시가족센터', addr:'대전시 유성구 테크노6로 40-17', sido:'대전광역시', tel:'042-932-9995', lat:36.3624, lng:127.3565},
+  {name:'대전서구가족센터', addr:'대전시 서구 배재로 155-40', sido:'대전광역시', tel:'042-520-5928', lat:36.3488, lng:127.3833},
+  {name:'대덕구가족센터', addr:'대전시 대덕구 대청로 45', sido:'대전광역시', tel:'042-639-2664', lat:36.3463, lng:127.4149},
+  {name:'울산남구가족센터', addr:'울산시 남구 여천로 12번길 50', sido:'울산광역시', tel:'052-274-3136', lat:35.5384, lng:129.3114},
+  {name:'울산동구가족센터', addr:'울산시 동구 대송로 112', sido:'울산광역시', tel:'052-232-3357', lat:35.505, lng:129.4162},
+  {name:'울산북구가족센터', addr:'울산시 북구 동대5길 31', sido:'울산광역시', tel:'052-286-0025', lat:35.5822, lng:129.3612},
+  {name:'울주군가족센터', addr:'울산시 울주군 범서읍 점촌5길 39-7', sido:'울산광역시', tel:'052-242-9600', lat:35.5218, lng:129.2466},
+  {name:'울산중구가족센터', addr:'울산시 중구 중앙시장길 2', sido:'울산광역시', tel:'052-248-1103', lat:35.5688, lng:129.3323},
+  {name:'세종시가족센터', addr:'세종시 새롬로 14', sido:'세종특별자치시', tel:'044-862-9336', lat:36.4801, lng:127.2882},
+  {name:'가평군가족센터', addr:'경기도 가평군 가평읍 보납로 33', sido:'경기도', tel:'031-582-9902', lat:37.8314, lng:127.5094},
+  {name:'과천시가족센터', addr:'경기도 과천시 관악산길 58', sido:'경기도', tel:'02-503-0070', lat:37.4292, lng:126.9877},
+  {name:'광명시가족센터', addr:'경기도 광명시 디지털로 34', sido:'경기도', tel:'02-6265-1366', lat:37.4785, lng:126.8647},
+  {name:'광주시가족센터', addr:'경기도 광주시 통미로 52번길 19', sido:'경기도', tel:'031-798-7137', lat:37.4296, lng:127.2553},
+  {name:'구리시가족센터', addr:'경기도 구리시 아차산로 453', sido:'경기도', tel:'031-556-3873', lat:37.5943, lng:127.1296},
+  {name:'군포시가족센터', addr:'경기도 군포시 번영로200번길 72', sido:'경기도', tel:'031-392-1811', lat:37.3615, lng:126.9352},
+  {name:'김포시가족센터', addr:'경기도 김포시 김포한강4로 564', sido:'경기도', tel:'031-996-5920', lat:37.6152, lng:126.7156},
+  {name:'남양주시가족센터', addr:'경기도 남양주시 경춘로 522', sido:'경기도', tel:'031-553-8211', lat:37.636, lng:127.2165},
+  {name:'동두천시가족센터', addr:'경기도 동두천시 중앙로 249', sido:'경기도', tel:'031-863-3801', lat:37.9036, lng:127.0606},
+  {name:'시흥시가족센터', addr:'경기도 시흥시 정왕천로 449번길 51', sido:'경기도', tel:'031-319-7997', lat:37.3799, lng:126.8031},
+  {name:'안성시가족센터', addr:'경기도 안성시 산수유길 15', sido:'경기도', tel:'031-677-7191', lat:37.0078, lng:127.2798},
+  {name:'안양시가족센터', addr:'경기도 안양시 동안구 동안로 158', sido:'경기도', tel:'031-8045-5572', lat:37.3943, lng:126.9568},
+  {name:'양주시가족센터', addr:'경기도 양주시 평화로 1475번길 39', sido:'경기도', tel:'031-858-5681', lat:37.7855, lng:127.0456},
+  {name:'양평군가족센터', addr:'경기도 양평군 양평읍 중앙로 111번길 34-23', sido:'경기도', tel:'031-775-5957', lat:37.4916, lng:127.4877},
+  {name:'여주시가족센터', addr:'경기도 여주시 세종로 61', sido:'경기도', tel:'031-886-0321', lat:37.2981, lng:127.6376},
+  {name:'연천군가족센터', addr:'경기도 연천군 전곡읍 전영로 11', sido:'경기도', tel:'031-835-0093', lat:38.0959, lng:127.0748},
+  {name:'오산시가족센터', addr:'경기도 오산시 성호대로 83', sido:'경기도', tel:'031-378-9766', lat:37.1499, lng:127.0774},
+  {name:'용인시가족센터', addr:'경기도 용인시 수지구 법조로 230', sido:'경기도', tel:'031-323-7131', lat:37.3219, lng:127.109},
+  {name:'의왕시가족센터', addr:'경기도 의왕시 오전동길 61', sido:'경기도', tel:'031-429-8931', lat:37.3449, lng:126.9685},
+  {name:'의정부시가족센터', addr:'경기도 의정부시 둔야로 5번길 67', sido:'경기도', tel:'031-878-7117', lat:37.7382, lng:127.0337},
+  {name:'이천시가족센터', addr:'경기도 이천시 남천로 31', sido:'경기도', tel:'031-631-2260', lat:37.2724, lng:127.4349},
+  {name:'파주시가족센터', addr:'경기도 파주시 중앙로 229', sido:'경기도', tel:'031-949-9161', lat:37.7596, lng:126.78},
+  {name:'평택시가족센터', addr:'경기도 평택시 서정로 295', sido:'경기도', tel:'031-615-3952', lat:36.9921, lng:127.1128},
+  {name:'포천시가족센터', addr:'경기도 포천시 해룡로 120', sido:'경기도', tel:'031-532-2062', lat:37.8949, lng:127.2003},
+  {name:'하남시가족센터', addr:'경기도 하남시 덕풍천서로 9', sido:'경기도', tel:'031-793-2993', lat:37.5397, lng:127.2146},
+  {name:'화성시가족센터', addr:'경기도 화성시 태안로 145', sido:'경기도', tel:'031-221-5559', lat:37.1994, lng:126.8316},
+  {name:'강릉시가족센터', addr:'강원도 강릉시 임암로 92번길 30-16', sido:'강원특별자치도', tel:'033-648-3019', lat:37.7519, lng:128.8761},
+  {name:'고성군가족센터', addr:'강원도 고성군 간성읍 간성로 97', sido:'강원특별자치도', tel:'033-681-9334', lat:38.38, lng:128.4675},
+  {name:'동해시가족센터', addr:'강원도 동해시 천곡1길 20-3', sido:'강원특별자치도', tel:'033-535-8377', lat:37.5247, lng:129.1142},
+  {name:'삼척시가족센터', addr:'강원도 삼척시 중앙시장길 53-6', sido:'강원특별자치도', tel:'033-576-0761', lat:37.45, lng:129.165},
+  {name:'속초시가족센터', addr:'강원도 속초시 도리원길 5', sido:'강원특별자치도', tel:'033-638-3523', lat:38.207, lng:128.5918},
+  {name:'양구군가족센터', addr:'강원도 양구군 양구읍 장터길 43', sido:'강원특별자치도', tel:'033-480-2445', lat:38.1061, lng:127.9893},
+  {name:'양양군가족센터', addr:'강원도 양양군 양양읍 안산1길 36', sido:'강원특별자치도', tel:'033-670-2943', lat:38.0754, lng:128.6186},
+  {name:'영월군가족센터', addr:'강원도 영월군 영월읍 단종로 12', sido:'강원특별자치도', tel:'033-372-4769', lat:37.1836, lng:128.4614},
+  {name:'원주시가족센터', addr:'강원도 원주시 판부면 매봉길 16-18', sido:'강원특별자치도', tel:'033-764-8612', lat:37.3422, lng:127.9202},
+  {name:'인제군가족센터', addr:'강원도 인제군 인제읍 비봉로 44번길 100', sido:'강원특별자치도', tel:'033-462-3651', lat:38.0694, lng:128.1705},
+  {name:'정선군가족센터', addr:'강원도 정선군 정선읍 봉양7길 16', sido:'강원특별자치도', tel:'033-562-3458', lat:37.3804, lng:128.6605},
+  {name:'철원군가족센터', addr:'강원도 철원군 갈말읍 삼부연로 22-1', sido:'강원특별자치도', tel:'033-452-7800', lat:38.1469, lng:127.3132},
+  {name:'춘천시가족센터', addr:'강원도 춘천시 공지로 305', sido:'강원특별자치도', tel:'033-251-8014', lat:37.8747, lng:127.7342},
+  {name:'태백시가족센터', addr:'강원도 태백시 비콘로 234', sido:'강원특별자치도', tel:'033-554-4003', lat:37.1635, lng:128.9855},
+  {name:'평창군가족센터', addr:'강원도 평창군 평창읍 평창중앙로 67', sido:'강원특별자치도', tel:'033-332-2063', lat:37.3703, lng:128.3904},
+  {name:'홍천군가족센터', addr:'강원도 홍천군 홍천읍 꽃뫼로 87', sido:'강원특별자치도', tel:'033-433-1915', lat:37.697, lng:127.8887},
+  {name:'화천군가족센터', addr:'강원도 화천군 화천읍 산수화로 45-30', sido:'강원특별자치도', tel:'033-440-4527', lat:38.1066, lng:127.7083},
+  {name:'횡성군가족센터', addr:'강원도 횡성군 횡성읍 횡성로 379', sido:'강원특별자치도', tel:'033-344-3458', lat:37.4917, lng:127.9848},
+  {name:'괴산군가족센터', addr:'충북 괴산군 괴산읍 금산길 3', sido:'충청북도', tel:'043-832-1078', lat:36.8155, lng:127.7872},
+  {name:'단양군가족센터', addr:'충북 단양군 단양읍 별곡 12길 5', sido:'충청북도', tel:'043-421-6200', lat:36.9846, lng:128.3654},
+  {name:'보은군가족센터', addr:'충북 보은군 보은읍 남부로 4515', sido:'충청북도', tel:'043-544-5422', lat:36.4896, lng:127.7296},
+  {name:'영동군가족센터', addr:'충북 영동군 영동읍 성안길 8', sido:'충청북도', tel:'043-745-8489', lat:36.1745, lng:127.7762},
+  {name:'옥천군가족센터', addr:'충북 옥천군 옥천읍 삼금로4길 6', sido:'충청북도', tel:'043-733-1915', lat:36.3062, lng:127.5713},
+  {name:'음성군가족센터', addr:'충북 음성군 음성읍 음성천서길 103', sido:'충청북도', tel:'043-873-8731', lat:36.94, lng:127.689},
+  {name:'제천시가족센터', addr:'충북 제천시 명륜로 13길 3', sido:'충청북도', tel:'043-645-1995', lat:37.1328, lng:128.1909},
+  {name:'증평군가족센터', addr:'충북 증평군 증평읍 문화로 75-1', sido:'충청북도', tel:'043-835-3572', lat:36.7851, lng:127.5812},
+  {name:'진천군가족센터', addr:'충북 진천군 진천읍 중앙북1길 11-10', sido:'충청북도', tel:'043-537-5435', lat:36.8554, lng:127.4352},
+  {name:'청주시가족센터', addr:'충북 청주시 서원구 무심서로 333', sido:'충청북도', tel:'043-263-1817', lat:36.6423, lng:127.4897},
+  {name:'충주시가족센터', addr:'충북 충주시 사직산21길 34', sido:'충청북도', tel:'043-856-2253', lat:36.991, lng:127.9259},
+  {name:'계룡시가족센터', addr:'충남 계룡시 엄사면 엄사중앙로 94', sido:'충청남도', tel:'042-551-1133', lat:36.274, lng:127.2489},
+  {name:'공주시가족센터', addr:'충남 공주시 우금티로 753', sido:'충청남도', tel:'041-853-0881', lat:36.4465, lng:127.119},
+  {name:'금산군가족센터', addr:'충남 금산군 금산읍 군청5길 35', sido:'충청남도', tel:'041-750-3990', lat:36.1085, lng:127.488},
+  {name:'논산시가족센터', addr:'충남 논산시 관촉로 277번길 23-13', sido:'충청남도', tel:'041-733-7800', lat:36.1868, lng:127.0988},
+  {name:'보령시가족센터', addr:'충남 보령시 한내로 45', sido:'충청남도', tel:'041-936-8506', lat:36.3335, lng:126.6127},
+  {name:'부여군가족센터', addr:'충남 부여군 규암면 아름1로 64', sido:'충청남도', tel:'041-830-2900', lat:36.2758, lng:126.9098},
+  {name:'서산시가족센터', addr:'충남 서산시 섞림1로 85', sido:'충청남도', tel:'041-664-2710', lat:36.7846, lng:126.4503},
+  {name:'서천군가족센터', addr:'충남 서천군 서천읍 서문로 38', sido:'충청남도', tel:'041-953-3808', lat:36.0797, lng:126.6916},
+  {name:'아산시가족센터', addr:'충남 아산시 시장길 29', sido:'충청남도', tel:'041-548-9779', lat:36.7897, lng:127.0021},
+  {name:'예산군가족센터', addr:'충남 예산군 예산읍 산성공원2길 15', sido:'충청남도', tel:'041-339-8381', lat:36.6827, lng:126.8474},
+  {name:'청양군가족센터', addr:'충남 청양군 청양읍 칠갑산로 9길 32', sido:'충청남도', tel:'041-944-2333', lat:36.4593, lng:126.8027},
+  {name:'태안군가족센터', addr:'충남 태안군 태안읍 백화로 180', sido:'충청남도', tel:'041-670-2396', lat:36.7457, lng:126.2983},
+  {name:'홍성군가족센터', addr:'충남 홍성군 홍성읍 조양로75번길 17', sido:'충청남도', tel:'041-634-7432', lat:36.6013, lng:126.6609},
+  {name:'고창군가족센터', addr:'전북 고창군 고창읍 모양성로 26', sido:'전북특별자치도', tel:'063-561-1366', lat:35.4348, lng:126.7022},
+  {name:'군산시가족센터', addr:'전북 군산시 축동1길 15-2', sido:'전북특별자치도', tel:'063-443-0053', lat:35.9677, lng:126.7368},
+  {name:'김제시가족센터', addr:'전북 김제시 하동1길 121', sido:'전북특별자치도', tel:'063-545-8506', lat:35.8034, lng:126.8807},
+  {name:'남원시가족센터', addr:'전북 남원시 용성로 43', sido:'전북특별자치도', tel:'063-635-5474', lat:35.4161, lng:127.3899},
+  {name:'무주군가족센터', addr:'전북 무주군 무주읍 주계로 7', sido:'전북특별자치도', tel:'063-322-1130', lat:35.9045, lng:127.661},
+  {name:'부안군가족센터', addr:'전북 부안군 부안읍 매창로 119', sido:'전북특별자치도', tel:'063-580-3941', lat:35.7317, lng:126.733},
+  {name:'순창군가족센터', addr:'전북 순창군 순창읍 순창로 127', sido:'전북특별자치도', tel:'063-652-3844', lat:35.3747, lng:127.1376},
+  {name:'완주군가족센터', addr:'전북 완주군 용진읍 완주로 456-39', sido:'전북특별자치도', tel:'063-261-1033', lat:35.9043, lng:127.1571},
+  {name:'익산시가족센터', addr:'전북 익산시 고현로 10-3', sido:'전북특별자치도', tel:'063-838-6046', lat:35.9483, lng:126.9578},
+  {name:'임실군가족센터', addr:'전북 임실군 임실읍 봉황로 80', sido:'전북특별자치도', tel:'063-642-1837', lat:35.6175, lng:127.2893},
+  {name:'장수군가족센터', addr:'전북 장수군 장수읍 싸리재로 15', sido:'전북특별자치도', tel:'063-352-3362', lat:35.6474, lng:127.5213},
+  {name:'정읍시가족센터', addr:'전북 정읍시 중앙2길 22', sido:'전북특별자치도', tel:'063-531-0309', lat:35.5699, lng:126.856},
+  {name:'진안군가족센터', addr:'전북 진안군 진안읍 중앙로 28', sido:'전북특별자치도', tel:'063-433-4888', lat:35.7917, lng:127.4247},
+  {name:'강진군가족센터', addr:'전남 강진군 강진읍 사의재길 41', sido:'전라남도', tel:'061-433-9004', lat:34.6418, lng:126.768},
+  {name:'고흥군가족센터', addr:'전남 고흥군 고흥읍 고흥로 1656', sido:'전라남도', tel:'061-832-5399', lat:34.6082, lng:127.2753},
+  {name:'곡성군가족센터', addr:'전남 곡성군 곡성읍 학정3길 6', sido:'전라남도', tel:'061-362-5411', lat:35.282, lng:127.2924},
+  {name:'광양시가족센터', addr:'전남 광양시 중마로 410', sido:'전라남도', tel:'061-797-6800', lat:34.9407, lng:127.6956},
+  {name:'구례군가족센터', addr:'전남 구례군 구례읍 구례로 508', sido:'전라남도', tel:'061-781-8003', lat:35.2025, lng:127.4633},
+  {name:'나주시가족센터', addr:'전남 나주시 시청길 17', sido:'전라남도', tel:'061-331-0709', lat:35.016, lng:126.7106},
+  {name:'담양군가족센터', addr:'전남 담양군 담양읍 완동길 10-5', sido:'전라남도', tel:'061-383-3655', lat:35.3216, lng:126.9882},
+  {name:'무안군가족센터', addr:'전남 무안군 무안읍 무안로 511', sido:'전라남도', tel:'061-452-1813', lat:34.9904, lng:126.4817},
+  {name:'보성군가족센터', addr:'전남 보성군 보성읍 송재로 186-5', sido:'전라남도', tel:'061-852-2664', lat:34.7714, lng:127.08},
+  {name:'순천시가족센터', addr:'전남 순천시 중앙로 255', sido:'전라남도', tel:'061-750-5353', lat:34.9506, lng:127.4875},
+  {name:'신안군가족센터', addr:'전남 신안군 압해읍 천사로 1004', sido:'전라남도', tel:'061-240-8706', lat:34.8285, lng:126.3813},
+  {name:'여수시가족센터', addr:'전남 여수시 새터로 33', sido:'전라남도', tel:'061-692-4173', lat:34.7604, lng:127.6622},
+  {name:'목포시가족센터', addr:'전남 목포시 수강로12번길 41', sido:'전라남도', tel:'061-278-4222', lat:34.8118, lng:126.3922},
+  {name:'영광군가족센터', addr:'전남 영광군 영광읍 물무로 171', sido:'전라남도', tel:'061-353-7997', lat:35.2772, lng:126.512},
+  {name:'영암군가족센터', addr:'전남 영암군 삼호읍 세가래로 88', sido:'전라남도', tel:'061-463-2928', lat:34.7999, lng:126.6967},
+  {name:'완도군가족센터', addr:'전남 완도군 완도읍 개포로 34-10', sido:'전라남도', tel:'061-554-3400', lat:34.3103, lng:126.755},
+  {name:'장성군가족센터', addr:'전남 장성군 장성읍 충무5길 24', sido:'전라남도', tel:'061-393-5420', lat:35.3022, lng:126.7847},
+  {name:'장흥군가족센터', addr:'전남 장흥군 장흥읍 흥성로 37-24', sido:'전라남도', tel:'061-864-4810', lat:34.6813, lng:126.9073},
+  {name:'진도군가족센터', addr:'전남 진도군 진도읍 진도대로 7215', sido:'전라남도', tel:'061-544-9993', lat:34.4873, lng:126.2631},
+  {name:'함평군가족센터', addr:'전남 함평군 함평읍 들샘길 36', sido:'전라남도', tel:'061-324-5431', lat:35.0651, lng:126.5169},
+  {name:'해남군가족센터', addr:'전남 해남군 해남읍 북부순환로 10', sido:'전라남도', tel:'061-534-0017', lat:34.5736, lng:126.5993},
+  {name:'화순군가족센터', addr:'전남 화순군 화순읍 대교로 11', sido:'전라남도', tel:'061-375-1057', lat:35.0643, lng:126.9864},
+  {name:'경상북도가족센터', addr:'경북 구미시 형곡동로 2길 4', sido:'경상북도', tel:'054-454-0542', lat:36.1198, lng:128.3445},
+  {name:'경산시가족센터', addr:'경북 경산시 경산로 131', sido:'경상북도', tel:'053-819-5500', lat:35.8251, lng:128.7414},
+  {name:'경주시가족센터', addr:'경북 경주시 북성로 87', sido:'경상북도', tel:'054-779-8706', lat:35.8562, lng:129.2247},
+  {name:'구미시가족센터', addr:'경북 구미시 산책길 73', sido:'경상북도', tel:'054-443-0541', lat:36.1196, lng:128.3446},
+  {name:'김천시가족센터', addr:'경북 김천시 공단로 152-32', sido:'경상북도', tel:'054-439-8280', lat:36.1397, lng:128.1136},
+  {name:'문경시가족센터', addr:'경북 문경시 매봉로 65', sido:'경상북도', tel:'054-554-5591', lat:36.5862, lng:128.1861},
+  {name:'봉화군가족센터', addr:'경북 봉화군 봉화읍 내성로5길 13', sido:'경상북도', tel:'054-673-9023', lat:36.893, lng:128.7322},
+  {name:'상주시가족센터', addr:'경북 상주시 상산로 97', sido:'경상북도', tel:'054-531-1342', lat:36.4107, lng:128.159},
+  {name:'성주군가족센터', addr:'경북 성주군 성주읍 경산길 17', sido:'경상북도', tel:'054-930-8245', lat:35.9188, lng:128.2825},
+  {name:'안동시가족센터', addr:'경북 안동시 경북대로 440', sido:'경상북도', tel:'054-853-3111', lat:36.5684, lng:128.7295},
+  {name:'영덕군가족센터', addr:'경북 영덕군 영덕읍 강변길 324', sido:'경상북도', tel:'054-730-7383', lat:36.4153, lng:129.3654},
+  {name:'영주시가족센터', addr:'경북 영주시 명륜길 28번길 25', sido:'경상북도', tel:'054-634-5431', lat:36.8057, lng:128.6235},
+  {name:'영천시가족센터', addr:'경북 영천시 운동장로 41', sido:'경상북도', tel:'054-334-2881', lat:35.9735, lng:128.9386},
+  {name:'예천군가족센터', addr:'경북 예천군 예천읍 충효로 239', sido:'경상북도', tel:'054-654-4321', lat:36.6571, lng:128.4521},
+  {name:'울릉군가족센터', addr:'경북 울릉군 울릉읍 봉래2길 31', sido:'경상북도', tel:'054-791-0205', lat:37.4844, lng:130.906},
+  {name:'울진군가족센터', addr:'경북 울진군 울진북로 496-11', sido:'경상북도', tel:'054-783-8988', lat:36.993, lng:129.4003},
+  {name:'의성군가족센터', addr:'경북 의성군 의성읍 후죽1길 21', sido:'경상북도', tel:'054-832-5440', lat:36.3527, lng:128.6972},
+  {name:'청도군가족센터', addr:'경북 청도군 화양읍 청려로 1846', sido:'경상북도', tel:'054-373-8131', lat:35.6474, lng:128.7344},
+  {name:'칠곡군가족센터', addr:'경북 칠곡군 왜관읍 관문로 1길 24-11', sido:'경상북도', tel:'054-975-0833', lat:35.9959, lng:128.4015},
+  {name:'포항시가족센터', addr:'경북 포항시 북구 선착로 18-10', sido:'경상북도', tel:'054-244-9702', lat:36.019, lng:129.3435},
+  {name:'경상남도가족센터', addr:'경남 창원시 의창구 동읍로 475번길 48', sido:'경상남도', tel:'055-716-2363', lat:35.3685, lng:128.7322},
+  {name:'거제시가족센터', addr:'경남 거제시 용소1길 35', sido:'경상남도', tel:'055-682-4958', lat:34.8808, lng:128.6217},
+  {name:'거창군가족센터', addr:'경남 거창군 거창읍 강남로1길 170', sido:'경상남도', tel:'055-945-1365', lat:35.6867, lng:127.9097},
+  {name:'경남고성군가족센터', addr:'경남 고성군 고성읍 성내로 135번길 10-1', sido:'경상남도', tel:'055-673-1466', lat:34.9731, lng:128.3228},
+  {name:'김해시가족센터', addr:'경남 김해시 김해대로 2232', sido:'경상남도', tel:'055-329-6355', lat:35.2342, lng:128.8892},
+  {name:'남해군가족센터', addr:'경남 남해군 남해읍 망운로 32', sido:'경상남도', tel:'055-864-6965', lat:34.8376, lng:127.8924},
+  {name:'밀양시가족센터', addr:'경남 밀양시 밀양대로 2089', sido:'경상남도', tel:'055-351-4404', lat:35.5036, lng:128.7461},
+  {name:'사천시가족센터', addr:'경남 사천시 용현면 부곡3길 90', sido:'경상남도', tel:'055-832-0345', lat:35.0042, lng:128.0645},
+  {name:'산청군가족센터', addr:'경남 산청군 산청읍 웅석봉로 86번길 9-19', sido:'경상남도', tel:'055-972-1018', lat:35.4154, lng:127.873},
+  {name:'양산시가족센터', addr:'경남 양산시 양주1길 7-1', sido:'경상남도', tel:'055-382-0988', lat:35.335, lng:129.037},
+  {name:'의령군가족센터', addr:'경남 의령군 의령읍 의병로 17길 6', sido:'경상남도', tel:'055-573-8400', lat:35.322, lng:128.2619},
+  {name:'진주시가족센터', addr:'경남 진주시 진양호로 305', sido:'경상남도', tel:'055-749-5445', lat:35.1799, lng:128.1076},
+  {name:'창녕군가족센터', addr:'경남 창녕군 창녕읍 창녕대로 172', sido:'경상남도', tel:'055-533-1305', lat:35.5444, lng:128.4919},
+  {name:'창원시가족센터', addr:'경남 창원시 성산구 대정로20번길 11', sido:'경상남도', tel:'055-225-3951', lat:35.2279, lng:128.6811},
+  {name:'통영시가족센터', addr:'경남 통영시 신죽2길 130', sido:'경상남도', tel:'055-640-7900', lat:34.8544, lng:128.433},
+  {name:'하동군가족센터', addr:'경남 하동군 섬진강대로 2214', sido:'경상남도', tel:'055-880-6520', lat:35.0671, lng:127.7514},
+  {name:'함안군가족센터', addr:'경남 함안군 산인면 가야로 217', sido:'경상남도', tel:'055-583-5430', lat:35.2726, lng:128.4063},
+  {name:'함양군가족센터', addr:'경남 함양군 함양읍 함양여중길 10', sido:'경상남도', tel:'055-963-2057', lat:35.5204, lng:127.7258},
+  {name:'합천군가족센터', addr:'경남 합천군 합천읍 옥산로 96-7', sido:'경상남도', tel:'055-930-4735', lat:35.566, lng:128.1659},
+  {name:'서귀포시가족센터', addr:'제주 서귀포시 서호남로 12', sido:'제주특별자치도', tel:'064-732-6482', lat:33.2541, lng:126.56},
+  {name:'제주시가족센터', addr:'제주 제주시 중앙로 14길 15', sido:'제주특별자치도', tel:'064-725-8005', lat:33.4996, lng:126.5312},
+  {name:'부산진구다문화가족지원센터', addr:'부산 진구 백양대로 160', sido:'부산광역시', tel:'051-817-4313', lat:35.1581, lng:129.0558},
+  {name:'부산남구다문화가족지원센터', addr:'부산 남구 수영로 356', sido:'부산광역시', tel:'051-610-2027', lat:35.1432, lng:129.0994},
+  {name:'부산북구다문화가족지원센터', addr:'부산 북구 효열로 76', sido:'부산광역시', tel:'051-365-3408', lat:35.212, lng:129.0225},
+  {name:'해운대구다문화가족지원센터', addr:'부산 해운대구 양운로 91', sido:'부산광역시', tel:'051-702-8002', lat:35.1796, lng:129.1282},
+  {name:'부평구다문화가족지원센터', addr:'인천 부평구 열우물로 103', sido:'인천광역시', tel:'032-511-1800', lat:37.5088, lng:126.7222},
+  {name:'대전중구다문화가족지원센터', addr:'대전 중구 대흥로 128', sido:'대전광역시', tel:'042-335-4566', lat:36.3265, lng:127.4263},
+  {name:'수원시다문화가족지원센터', addr:'경기 수원시 장안구 송원로 63', sido:'경기도', tel:'031-257-8504', lat:37.2921, lng:127.012},
+  {name:'고양시다문화가족지원센터', addr:'경기 고양시 일산동구 대산로 27', sido:'경기도', tel:'031-938-9801', lat:37.6661, lng:126.8302},
+  {name:'부천시다문화가족지원센터', addr:'경기 부천시 조종로 68번가길 4', sido:'경기도', tel:'032-327-1370', lat:37.5034, lng:126.766},
+  {name:'안산시다문화가족지원센터', addr:'경기 안산시 단원구 화정로 26', sido:'경기도', tel:'031-599-1700', lat:37.3177, lng:126.8268},
+  {name:'청원다문화가족지원센터', addr:'충북 청주시 상당구 남일면 단재로 480', sido:'충청북도', tel:'043-293-8887', lat:36.5895, lng:127.3929},
+  {name:'천안시다문화가족지원센터', addr:'충남 천안시 동남구 은행길 15', sido:'충청남도', tel:'041-558-8653', lat:36.8062, lng:127.146},
+  {name:'당진시다문화가족지원센터', addr:'충남 당진시 시청1로 38', sido:'충청남도', tel:'041-360-3160', lat:36.89, lng:126.6277},
+  {name:'전주시다문화가족지원센터', addr:'전북 전주시 덕진구 팔달로 336', sido:'전북특별자치도', tel:'063-243-0333', lat:35.8242, lng:127.1479},
+  {name:'청송군다문화가족지원센터', addr:'경북 청송군 청송읍 복지타운길 77', sido:'경상북도', tel:'054-870-6790', lat:36.4358, lng:129.0572},
+  {name:'영양군다문화가족지원센터', addr:'경북 영양군 영양읍 군민회관길 36', sido:'경상북도', tel:'054-683-5432', lat:36.667, lng:129.1127},
+  {name:'고령군다문화가족지원센터', addr:'경북 고령군 대가야읍 왕릉로 30', sido:'경상북도', tel:'054-956-6336', lat:35.7267, lng:128.2635}
+];
+
+// 시도별 위험도 매핑
+const riskBySido = {};
+GAP_DATA.forEach(d => { riskBySido[d.sido] = d.risk; });
+
+function getRisk(sido) {
+  const r = riskBySido[sido] || 0;
+  if (r >= 70) return 'high';
+  if (r >= 40) return 'mid';
+  return 'low';
+}
+function getRiskColor(sido) {
+  const t = getRisk(sido);
+  return t === 'high' ? '#FB7185' : t === 'mid' ? '#FB923C' : '#34D399';
+}
+function getRiskLabel(sido) {
+  const r = riskBySido[sido] || 0;
+  const t = getRisk(sido);
+  const label = t === 'high' ? '고위험' : t === 'mid' ? '중위험' : '저위험';
+  return `${label} (${r}점)`;
+}
+function getRiskClass(sido) {
+  const t = getRisk(sido);
+  return t === 'high' ? 'risk-high' : t === 'mid' ? 'risk-mid' : 'risk-low';
+}
+
+// ── 지도 초기화 ──
+const map = L.map('map', { zoomControl: true }).setView([36.5, 127.8], 7);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors', maxZoom: 18
+}).addTo(map);
+
+// 시도별 위험도 오버레이 (원형)
+const sidoCoords = {
+  '서울특별시': [37.5665, 126.9780],
+  '경기도': [37.2752, 127.0095],
+  '인천광역시': [37.4563, 126.7052],
+  '부산광역시': [35.1796, 129.0756],
+  '대구광역시': [35.8714, 128.6014],
+  '광주광역시': [35.1595, 126.8526],
+  '대전광역시': [36.3504, 127.3845],
+  '울산광역시': [35.5384, 129.3114],
+  '세종특별자치시': [36.4801, 127.2882],
+  '강원특별자치도': [37.8228, 128.1555],
+  '충청북도': [36.6358, 127.4914],
+  '충청남도': [36.6588, 126.6728],
+  '전라남도': [34.8679, 126.9910],
+  '전북특별자치도': [35.7175, 127.1530],
+  '경상북도': [36.5760, 128.5055],
+  '경상남도': [35.4606, 128.2132],
+  '제주특별자치도': [33.4996, 126.5312],
+};
+
+GAP_DATA.forEach(d => {
+  const coords = sidoCoords[d.sido];
+  if (!coords) return;
+  const color = d.risk >= 70 ? '#FB7185' : d.risk >= 40 ? '#FB923C' : '#34D399';
+  const radius = Math.max(15000, Math.min(45000, d.risk * 400));
+  L.circle(coords, {
+    color: color, fillColor: color, fillOpacity: 0.35,
+    opacity: 0.85, weight: 2.5, radius
+  }).addTo(map)
+    .bindTooltip(
+      `<b>${d.sido}</b><br>공백위험도 ${d.risk}점<br>다문화학생 ${d.students.toLocaleString()}명`,
+      {direction:'top', className:''}
+    );
+});
+
+// 센터 마커
+const markers = {};
+const customIcon = (color) => L.divIcon({
+  html: `<div style="
+    width:28px;height:28px;border-radius:50% 50% 50% 0;
+    background:${color};border:3px solid white;
+    box-shadow:0 2px 8px rgba(0,0,0,0.25);
+    transform:rotate(-45deg);
+    display:flex;align-items:center;justify-content:center;
+  "><div style="transform:rotate(45deg);color:white;font-size:11px">🏠</div></div>`,
+  className: '', iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -30]
+});
+
+CENTERS.forEach((c, i) => {
+  const color = getRiskColor(c.sido);
+  const riskLabel = getRiskLabel(c.sido);
+  const riskClass = getRiskClass(c.sido);
+  const risk = riskBySido[c.sido] || 0;
+  const popupHtml = `
+    <div class="popup-inner">
+      <div class="popup-name">${c.name}</div>
+      <div class="popup-addr">📍 ${c.addr}</div>
+      <div class="popup-tel">📞 ${c.tel}</div>
+      <div class="popup-risk ${riskClass}" style="margin-top:8px">
+        지역 공백위험도: ${riskLabel}
+      </div>
+    </div>`;
+  const marker = L.marker([c.lat, c.lng], { icon: customIcon(color) })
+    .addTo(map)
+    .bindPopup(popupHtml, { maxWidth: 280 });
+  markers[i] = marker;
+});
+
+// ── 사이드바 리스트 렌더 ──
+let activeFilters = new Set(['high','mid','low']);
+let selectedIdx = null;
+
+function renderList(data) {
+  const list = document.getElementById('center-list');
+  const count = document.getElementById('results-count');
+  if (data.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><p>검색 결과가 없어요.<br>다른 키워드로 검색해보세요.</p></div>`;
+    count.textContent = '검색 결과 없음';
+    return;
+  }
+  count.textContent = `${data.length}개 센터 표시 중`;
+  list.innerHTML = data.map(({ c, i }) => {
+    const risk = riskBySido[c.sido] || 0;
+    return `
+    <div class="center-card${i === selectedIdx ? ' selected' : ''}" onclick="selectCenter(${i})" data-idx="${i}">
+      <div class="center-card-header">
+        <div class="center-name">${c.name}</div>
+        <span class="risk-badge ${getRiskClass(c.sido)}">${risk}점</span>
+      </div>
+      <div class="center-addr">📍 ${c.addr}</div>
+      <div class="center-tel">📞 ${c.tel}</div>
+      <div class="center-sido">${c.sido}</div>
+    </div>`;
+  }).join('');
+}
+
+function getFilteredCenters(query='') {
+  return CENTERS.map((c, i) => ({c, i})).filter(({c}) => {
+    const riskType = getRisk(c.sido);
+    if (!activeFilters.has(riskType)) return false;
+    if (!query) return true;
+    const q = query.toLowerCase();
+    return c.name.includes(q) || c.addr.includes(q) || c.sido.includes(q);
+  });
+}
+
+function selectCenter(idx) {
+  selectedIdx = idx;
+  const c = CENTERS[idx];
+  map.flyTo([c.lat, c.lng], 14, {animate:true, duration:0.8});
+  markers[idx].openPopup();
+  document.querySelectorAll('.center-card').forEach(el => el.classList.remove('selected'));
+  document.querySelector(`[data-idx="${idx}"]`)?.classList.add('selected');
+}
+
+function toggleFilter(el, type) {
+  el.classList.toggle('active');
+  if (activeFilters.has(type)) activeFilters.delete(type);
+  else activeFilters.add(type);
+  const q = document.getElementById('search-input').value.trim();
+  renderList(getFilteredCenters(q));
+  
+  // 지도 마커도 필터링
+  CENTERS.forEach((c, i) => {
+    const riskType = getRisk(c.sido);
+    if (activeFilters.has(riskType)) {
+      markers[i].addTo(map);
+    } else {
+      markers[i].remove();
+    }
+  });
+}
+
+function searchCenters() {
+  const q = document.getElementById('search-input').value.trim();
+  const filtered = getFilteredCenters(q);
+  renderList(filtered);
+  if (filtered.length === 1) selectCenter(filtered[0].i);
+  else if (filtered.length > 0) {
+    const first = filtered[0];
+    map.flyTo([first.c.lat, first.c.lng], 10, {animate:true});
+  }
+}
+
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') searchCenters();
+});
+document.getElementById('search-input').addEventListener('input', e => {
+  renderList(getFilteredCenters(e.target.value.trim()));
+});
+
+// 초기 렌더
+renderList(getFilteredCenters());
+
+// 통계 업데이트
+document.getElementById('high-risk-count').textContent = GAP_DATA.filter(d => d.risk >= 70).length;
+</script>
+</body>
+</html>
