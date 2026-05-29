@@ -62,6 +62,23 @@
     .typing-dot:nth-child(3) { animation-delay: 0.4s; }
     @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
     .loading-inline { color: var(--text-muted); font-size: 13px; padding: 8px 0; }
+
+    /* 사이드바 레이아웃 */
+    .teacher-layout { display: grid; grid-template-columns: 280px 1fr; gap: 0; min-height: calc(100vh - 60px); }
+    .teacher-sidebar {
+      background: var(--white); border-right: 1px solid var(--border);
+      padding: 24px 20px; position: sticky; top: 60px;
+      height: calc(100vh - 60px); overflow-y: auto;
+    }
+    .sidebar-section-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+    .sidebar-empty { font-size: 13px; color: var(--text-muted); line-height: 1.7; text-align: center; padding: 20px 0; }
+    .db-info-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 10px; }
+    .db-info-label { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
+    .db-info-value { font-size: 15px; font-weight: 600; color: var(--text-dark); }
+    .db-level-bar { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+    .db-level-pip { padding: 3px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: 500; }
+    .db-tips-text { font-size: 12px; color: var(--text-mid); line-height: 1.8; }
+    .teacher-main { padding: 40px 32px; }
   </style>
 </head>
 <body>
@@ -70,10 +87,11 @@
     <a href="index.html" class="nav-logo">다가치</a>
     <ul class="nav-links">
       <li><a href="tutor.html">AI 튜터</a></li>
+      <li><a href="learn.html">학습</a></li>
       <li><a href="map.html">지원 찾기</a></li>
-      <li><a href="teacher.html" style="color:var(--sky); font-weight:500;">교사 가이드</a></li>
+      <li><a href="teacher.html" style="color:var(--sky);font-weight:500;">교사 가이드</a></li>
+      <li><a href="parent.html">학부모 안내</a></li>
     </ul>
-    <a href="tutor.html" class="nav-cta">시작하기</a>
   </nav>
 
   <div class="page-hero">
@@ -84,7 +102,43 @@
     <p>담당 학생 정보를 입력하면<br>맞춤 지도법·소통 팁·수업 표현집을 즉시 제안합니다</p>
   </div>
 
-  <div class="teacher-wrap">
+  <div class="teacher-layout">
+
+    <!-- 왼쪽 사이드바: 학생 대시보드 -->
+    <div class="teacher-sidebar">
+      <div class="sidebar-section-title">📊 학생 대시보드</div>
+      <div id="sidebar-empty">
+        <div class="sidebar-empty">
+          오른쪽에서 학생 정보를 입력하고<br>가이드를 생성하면<br>여기에 표시됩니다
+        </div>
+      </div>
+      <div id="sidebar-dashboard" style="display:none;">
+        <div class="db-info-card" style="background:var(--sky-light);border-color:var(--sky);">
+          <div class="db-info-label" style="color:var(--sky);">학년</div>
+          <div class="db-info-value" id="db-grade"></div>
+        </div>
+        <div class="db-info-card" style="background:var(--purple-light);border-color:var(--purple);">
+          <div class="db-info-label" style="color:var(--purple);">언어권</div>
+          <div class="db-info-value" id="db-lang"></div>
+        </div>
+        <div class="db-info-card">
+          <div class="db-info-label">한국어 수준</div>
+          <div class="db-info-value" id="db-level"></div>
+          <div class="db-level-bar" id="db-level-bar"></div>
+        </div>
+        <div class="db-info-card">
+          <div class="db-info-label">학생 유형</div>
+          <div class="db-info-value" id="db-type"></div>
+        </div>
+        <div style="margin-top:16px;">
+          <div class="sidebar-section-title">💡 즉시 활용 팁</div>
+          <div class="db-tips-text" id="db-tips"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 오른쪽 메인 -->
+    <div class="teacher-main">
     <div class="form-card">
       <div class="form-card-title">담당 학생 정보 <span>필수</span></div>
       <div class="form-group">
@@ -172,8 +226,10 @@
         </div>
         <div class="concern-result" id="concern-result"></div>
       </div>
-    </div>
-  </div>
+
+    </div><!-- result-card 끝 -->
+    </div><!-- teacher-main 끝 -->
+  </div><!-- teacher-layout 끝 -->
 
   <footer class="footer">
     <div class="footer-logo">다가치</div>
@@ -182,100 +238,74 @@
   </footer>
 
   <script>
-  const API_KEY = 'AIzaSyDVDjNADSd9txAxkIFJ63a2_FpadGaaedE'; 
-  const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    const API_KEY = 'AIzaSyCkw8fXemwld30RZeqsqq2822Op91UbwNE';
+    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
-  let isRequesting = false;
-  let phraseGenerated = false;
+    let isRequesting = false;
+    let phraseGenerated = false;
 
-  const state = { grade: '', lang: '', level: '', type: '' };
-  let chatHistory = [];
-  let systemContext = '';
-  let guideGenerated = false;
+    const state = { grade: '', lang: '', level: '', type: '' };
+    let chatHistory = [];
+    let systemContext = '';
+    let guideGenerated = false;
 
-  // 1. 503 에러 발생 시 자동으로 재시도하는 안전장치 함수
-  async function fetchWithRetry(url, options, retries = 3, delay = 1500) {
-    for (let i = 0; i < retries; i++) {
-      try {
-        const res = await fetch(url, options);
-        if (res.status === 503 || res.status === 429) {
-          if (i === retries - 1) return res; 
-          console.warn(`구글 서버가 바쁩니다. ${delay}ms 후 다시 시도합니다. (${i + 1}/${retries})`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
-        }
-        return res;
-      } catch (err) {
-        if (i === retries - 1) throw err;
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
+    function setupChip(groupId, key) {
+      document.getElementById(groupId).querySelectorAll('.chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById(groupId).querySelectorAll('.chip').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          state[key] = btn.dataset.val;
+          checkReady();
+        });
+      });
     }
-  }
+    setupChip('grade-group', 'grade');
+    setupChip('lang-group', 'lang');
+    setupChip('level-group', 'level');
+    setupChip('type-group', 'type');
 
-  function setupChip(groupId, key) {
-    document.getElementById(groupId).querySelectorAll('.chip').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.getElementById(groupId).querySelectorAll('.chip').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        state[key] = btn.dataset.val;
-        checkReady();
+    function checkReady() {
+      document.getElementById('generate-btn').disabled = !(state.grade && state.lang && state.level);
+    }
+
+    // 탭 전환
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+        if (tab.dataset.tab === 'phrase' && guideGenerated && !phraseGenerated) {
+          phraseGenerated = true;
+          generatePhrases();
+        }
       });
     });
-  }
-  setupChip('grade-group', 'grade');
-  setupChip('lang-group', 'lang');
-  setupChip('level-group', 'level');
-  setupChip('type-group', 'type');
 
-  function checkReady() {
-    document.getElementById('generate-btn').disabled = !(state.grade && state.lang && state.level);
-    phraseGenerated = false;
-    document.getElementById('phrase-content').innerHTML = '<p class="loading-inline">가이드 생성 후 💬 수업 표현집 탭을 클릭하면 생성됩니다.</p>';
-    document.getElementById('concern-result').innerHTML = '';
-    guideGenerated = false;
-    document.getElementById('guide-content').innerHTML = '';
-    document.getElementById('chat-section').style.display = 'none';
-    document.getElementById('result-card').classList.remove('visible');
-  }
+    // 가이드 생성
+    document.getElementById('generate-btn').addEventListener('click', async () => {
+      if (isRequesting) return;
+      isRequesting = true;
+      const btn = document.getElementById('generate-btn');
+      btn.disabled = true;
+      btn.textContent = '생성 중...';
 
-  // 탭 전환
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
-      if (tab.dataset.tab === 'phrase' && guideGenerated && !phraseGenerated) {
-        phraseGenerated = true;
-        generatePhrases();
-      }
-    });
-  });
+      document.getElementById('result-card').classList.add('visible');
+      document.getElementById('result-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  // 2. 가이드 생성
-  document.getElementById('generate-btn').addEventListener('click', async () => {
-    if (isRequesting) return;
-    isRequesting = true;
-    const btn = document.getElementById('generate-btn');
-    btn.disabled = true;
-    btn.textContent = '생성 중...';
+      document.getElementById('result-tags').innerHTML = `
+        <span class="result-tag" style="background:var(--sky-light);color:var(--sky);">${state.grade}</span>
+        <span class="result-tag" style="background:var(--purple-light);color:var(--purple);">${state.lang}</span>
+        <span class="result-tag" style="background:#E0F2FE;color:#0284C7;">${state.level}</span>
+        ${state.type ? `<span class="result-tag" style="background:#E8F5E9;color:#2E7D32;">${state.type}</span>` : ''}
+      `;
 
-    document.getElementById('result-card').classList.add('visible');
-    document.getElementById('result-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    document.getElementById('result-tags').innerHTML = `
-      <span class="result-tag" style="background:var(--sky-light);color:var(--sky);">${state.grade}</span>
-      <span class="result-tag" style="background:var(--purple-light);color:var(--purple);">${state.lang}</span>
-      <span class="result-tag" style="background:#E0F2FE;color:#0284C7;">${state.level}</span>
-      ${state.type ? `<span class="result-tag" style="background:#E8F5E9;color:#2E7D32;">${state.type}</span>` : ''}
-    `;
-
-    systemContext = `당신은 다문화 교육 전문가이자 베테랑 교사 멘토입니다.
+      systemContext = `당신은 다문화 교육 전문가이자 베테랑 교사 멘토입니다.
 ${state.lang}권 ${state.grade} 다문화 학생(한국어 ${state.level} 수준${state.type ? ', '+state.type : ''})을 담당한 교사에게 실질적인 지도 조언을 제공합니다.
 현장에서 바로 적용 가능한 구체적인 방법을 제안하고, ${state.lang} 문화에 대한 이해를 바탕으로 조언하세요.
 한국어로 답변하세요.`;
 
-    const guidePrompt = `${state.lang}권 ${state.grade} 다문화 학생(한국어 ${state.level}${state.type ? ', '+state.type : ''}) 담당 교사 지도 가이드. 각 항목 핵심만 1~2문장씩:
+      const guidePrompt = `${state.lang}권 ${state.grade} 다문화 학생(한국어 ${state.level}${state.type ? ', '+state.type : ''}) 담당 교사 지도 가이드. 각 항목 핵심만 1~2문장씩:
 
 🎯 문화 이해 (2가지)
 📝 수업 지도법 (2가지)
@@ -283,259 +313,211 @@ ${state.lang}권 ${state.grade} 다문화 학생(한국어 ${state.level} 수준
 ⚠️ 주의할 문화 차이 (2가지)
 🏫 가정 연계 (1가지)`;
 
-    try {
-      const res = await fetchWithRetry(`${GEMINI_URL}?key=${API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: guidePrompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 3000 }
-        })
-      });
-
-      if (!res.ok) throw new Error(`서버 에러 (${res.status})`);
-
-      const data = await res.json();
-      const guideText = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 받지 못했습니다.';
-      document.getElementById('guide-content').innerHTML = formatText(guideText);
-      document.getElementById('chat-section').style.display = 'block';
-      chatHistory = [
-        { role: 'user', parts: [{ text: guidePrompt }] },
-        { role: 'model', parts: [{ text: guideText }] }
-      ];
-      guideGenerated = true;
-      btn.textContent = '✓ 가이드 생성 완료';
-    } catch (err) {
-      document.getElementById('guide-content').innerHTML = `<span style="color:#e53e3e">오류가 발생했습니다. 잠시 후 다시 시도해 주세요. (${err.message})</span>`;
-      btn.disabled = false;
-      btn.textContent = '다시 시도하기';
-    } finally {
-      isRequesting = false;
-    }
-  });
-
-  // 3. 표현집 생성
-  async function generatePhrases() {
-    if (isRequesting) {
-      document.getElementById('phrase-content').innerHTML = '<p class="loading-inline">⏳ 잠시 후 다시 클릭해주세요.</p>';
-      phraseGenerated = false;
-      return;
-    }
-    isRequesting = true;
-    let text = '[]';
-    document.getElementById('phrase-content').innerHTML = '<p class="loading-inline">표현집 생성 중...</p>';
-
-    const phrasePrompt = `다음 6가지 상황에 대해 교사가 수업 중 사용할 한국어 표현과 ${state.lang} 번역을 작성하세요.
-반드시 6개 항목 모두 작성하세요. 항목 수를 늘리거나 줄이지 마세요.
-
-JSON 배열만 출력하세요. 설명/코드블록 금지.
-[
-  {"situation": "수업 시작", "korean": "자, 수업 시작할게요.", "translated": "${state.lang} 번역"},
-  {"situation": "이해 확인", "korean": "이해했나요?", "translated": "${state.lang} 번역"},
-  {"situation": "칭찬", "korean": "잘했어요!", "translated": "${state.lang} 번역"},
-  {"situation": "주의", "korean": "조용히 해주세요.", "translated": "${state.lang} 번역"},
-  {"situation": "숙제 안내", "korean": "숙제는 ~입니다.", "translated": "${state.lang} 번역"},
-  {"situation": "하교", "korean": "오늘도 수고했어요!", "translated": "${state.lang} 번역"}
-]
-위 예시처럼 정확히 6개 항목을 작성하세요. korean과 translated 필드에 실제 표현을 넣으세요.`;
-
-    try {
-      const res = await fetchWithRetry(`${GEMINI_URL}?key=${API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: phrasePrompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1500, responseMimeType: "application/json" }
-        })
-      });
-
-      if (!res.ok) throw new Error(`서버 에러 (${res.status})`);
-
-      const data = await res.json();
-      const candidate = data.candidates?.[0];
-      if (!candidate) throw new Error('응답 없음');
-
-      text = candidate.content?.parts?.[0]?.text || '[]';
-      text = text.replace(/```json|```/g, '').trim(); // 정규식 정상화 완료
-      text = text.replace(/\n/g, ' ').replace(/\r/g, ' ').replace(/\t/g, ' ');
-
-      const lastBrace = text.lastIndexOf('}');
-      if (lastBrace !== -1) {
-        text = text.slice(0, lastBrace + 1);
-        if (!text.trim().endsWith(']')) text += ']';
+      try {
+        const res = await fetch(`${GEMINI_URL}?key=${API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: guidePrompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
+          })
+        });
+        const data = await res.json();
+        const guideText = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 받지 못했습니다.';
+        document.getElementById('guide-content').innerHTML = formatText(guideText);
+        document.getElementById('chat-section').style.display = 'block';
+        chatHistory = [
+          { role: 'user', parts: [{ text: guidePrompt }] },
+          { role: 'model', parts: [{ text: guideText }] }
+        ];
+        guideGenerated = true;
+        btn.textContent = '✓ 가이드 생성 완료';
+        updateDashboard();
+      } catch (err) {
+        document.getElementById('guide-content').innerHTML = `<span style="color:#e53e3e">오류: ${err.message}</span>`;
+        btn.disabled = false;
+        btn.textContent = '다시 시도하기';
+      } finally {
+        isRequesting = false;
       }
+    });
 
-      let phrases = JSON.parse(text);
-      if (!Array.isArray(phrases)) throw new Error('배열 형식 아님');
-
-      const html = `<div class="phrase-grid">${phrases.map(p => `
-        <div class="phrase-card">
-          <div class="phrase-situation">${p.situation}</div>
-          <div class="phrase-korean">${p.korean}</div>
-          <div class="phrase-translated">${p.translated}</div>
-        </div>
-      `).join('')}</div>`;
-      document.getElementById('phrase-content').innerHTML = html;
-    } catch (err) {
-      document.getElementById('phrase-content').innerHTML = `<p style="color:#e53e3e">표현집 생성 실패. 탭을 다시 클릭해주세요.</p>`;
-      phraseGenerated = false;
-    } finally {
-      isRequesting = false;
-    }
-  }
-
-// 4. 고민 유형별 대응 (맥락 유지형으로 업그레이드)
-  document.getElementById('concern-chips').querySelectorAll('.concern-chip').forEach(chip => {
-    chip.addEventListener('click', async () => {
-      if (!guideGenerated) {
-        alert('먼저 가이드를 생성해주세요!');
-        return;
-      }
+    // 표현집 생성
+    async function generatePhrases() {
       if (isRequesting) {
-        alert('이전 요청이 처리 중입니다. 잠시 후 다시 시도해주세요.');
+        document.getElementById('phrase-content').innerHTML = '<p class="loading-inline">⏳ 잠시 후 다시 클릭해주세요.</p>';
+        phraseGenerated = false;
         return;
       }
-      document.getElementById('concern-chips').querySelectorAll('.concern-chip').forEach(c => c.classList.remove('selected'));
-      chip.classList.add('selected');
-      const concernResult = document.getElementById('concern-result');
-      concernResult.classList.add('visible');
-      concernResult.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+      isRequesting = true;
+      let text = '[]'; // ← 여기서 선언!
+      document.getElementById('phrase-content').innerHTML = '<p class="loading-inline">표현집 생성 중...</p>';
 
-      // 💡 인공지능이 헤매지 않도록 구체적인 대상을 명시해 줍니다.
-      const concernPrompt = `현재 선택된 학생은 ${state.lang}권 ${state.grade} (한국어 수준: ${state.level}) 다문화 학생입니다. 
-이 학생이 현재 "${chip.dataset.val}"으로 힘들어하고 있습니다. 교사로서 어떻게 대응해야 할지 다음 서식에 맞추어 핵심만 1~2문장으로 간결하게 답변해 주세요:
+      const phrasePrompt = `${state.lang}권 학생을 담당한 교사가 수업 중 바로 쓸 수 있는 핵심 표현을 만들어주세요.
+각 상황마다 한국어 표현과 ${state.lang} 번역을 함께 제공하세요.
 
-🔍 원인:
-💡 즉각 대응:
-📅 장기 지원:
-🤝 전문기관 연계 시점:`;
+다음 6가지 상황에 대해 작성해주세요:
+1. 수업 시작할 때
+2. 이해했는지 확인할 때
+3. 칭찬할 때
+4. 주의를 줄 때 (부드럽게)
+5. 숙제/준비물 안내
+6. 하교할 때
+
+반드시 아래 JSON 형식으로만 답변하세요. 다른 텍스트 없이 JSON만:
+[
+  {"situation": "수업 시작", "korean": "한국어 표현", "translated": "${state.lang} 번역"},
+  ...
+]`;
 
       try {
-        // 💡 [핵심 수정] 단발성 질문이 아니라, 앞서 생성된 chatHistory에 고민 질문을 누적해서 보냅니다!
-        const concernContents = [
-          ...chatHistory,
-          { role: 'user', parts: [{ text: concernPrompt }] }
-        ];
+        const res = await fetch(`${GEMINI_URL}?key=${API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: phrasePrompt }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 1200 }
+          })
+        });
+        const data = await res.json();
+        text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]'; // ← let 없이!
+        text = text.replace(/```json|```/g, '').trim();
+        const phrases = JSON.parse(text);
+        const html = `<div class="phrase-grid">${phrases.map(p => `
+          <div class="phrase-card">
+            <div class="phrase-situation">${p.situation}</div>
+            <div class="phrase-korean">${p.korean}</div>
+            <div class="phrase-translated">${p.translated}</div>
+          </div>
+        `).join('')}</div>`;
+        document.getElementById('phrase-content').innerHTML = html;
+      } catch (err) {
+        document.getElementById('phrase-content').innerHTML = `<p style="color:#e53e3e">표현집 생성 실패. 탭을 다시 클릭해주세요.<br>원문: ${text?.slice(0,200)}</p>`;
+        phraseGenerated = false;
+      } finally {
+        isRequesting = false;
+      }
+    }
 
-        const res = await fetchWithRetry(`${GEMINI_URL}?key=${API_KEY}`, {
+    // 고민 유형별 대응
+    document.getElementById('concern-chips').querySelectorAll('.concern-chip').forEach(chip => {
+      chip.addEventListener('click', async () => {
+        if (!guideGenerated) {
+          alert('먼저 가이드를 생성해주세요!');
+          return;
+        }
+        if (isRequesting) {
+          alert('이전 요청이 처리 중입니다. 잠시 후 다시 시도해주세요.');
+          return;
+        }
+        document.getElementById('concern-chips').querySelectorAll('.concern-chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        const concernResult = document.getElementById('concern-result');
+        concernResult.classList.add('visible');
+        concernResult.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+
+        const concernPrompt = `${state.lang}권 ${state.grade} 다문화 학생이 "${chip.dataset.val}"으로 힘들어할 때 교사 대응법을 간결하게:
+
+🔍 원인 (1~2문장)
+💡 즉각 대응 (2가지)
+📅 장기 지원 (1가지)
+🤝 전문기관 연계 시점 (1가지)`;
+
+        try {
+          const res = await fetch(`${GEMINI_URL}?key=${API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: systemContext }] },
+              contents: [{ role: 'user', parts: [{ text: concernPrompt }] }],
+              generationConfig: { temperature: 0.7, maxOutputTokens: 800 }
+            })
+          });
+          const data = await res.json();
+          const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 받지 못했습니다.';
+          concernResult.innerHTML = formatText(reply);
+        } catch (err) {
+          concernResult.innerHTML = `<span style="color:#e53e3e">오류: ${err.message}</span>`;
+        }
+      });
+    });
+
+    // 채팅
+    document.getElementById('chat-send').addEventListener('click', sendChat);
+    document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+
+    async function sendChat() {
+      const input = document.getElementById('chat-input');
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      document.getElementById('chat-send').disabled = true;
+      addMessage('user', msg);
+      const typingEl = addMessage('ai', '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>');
+      chatHistory.push({ role: 'user', parts: [{ text: msg }] });
+      try {
+        const res = await fetch(`${GEMINI_URL}?key=${API_KEY}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             system_instruction: { parts: [{ text: systemContext }] },
-            contents: concernContents, // 👈 히스토리를 통째로 넘겨 맥락을 유지시킵니다!
-            generationConfig: { temperature: 0.5, maxOutputTokens: 2500 } // 토큰 버퍼 상향 및 온도를 낮춰 정교함 유도
+            contents: chatHistory,
+            generationConfig: { temperature: 0.7, maxOutputTokens: 800 }
           })
         });
-
-        if (!res.ok) throw new Error(`서버 에러 (${res.status})`);
-
         const data = await res.json();
         const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 받지 못했습니다.';
-        concernResult.innerHTML = formatText(reply);
+        typingEl.innerHTML = formatText(reply);
+        chatHistory.push({ role: 'model', parts: [{ text: reply }] });
       } catch (err) {
-        concernResult.innerHTML = `<span style="color:#e53e3e">오류가 발생했습니다: ${err.message}</span>`;
+        typingEl.innerHTML = `<span style="color:#e53e3e">오류: ${err.message}</span>`;
       }
-    });
-  });
-
-  // 5. 채팅
-  document.getElementById('chat-send').addEventListener('click', sendChat);
-  document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
-
-  async function sendChat() {
-  const input = document.getElementById('chat-input');
-  const msg = input.value.trim();
-
-  if (!msg) return;
-
-  input.value = '';
-
-  document.getElementById('chat-send').disabled = true;
-
-  addMessage('user', msg);
-
-  const typingEl = addMessage(
-    'ai',
-    '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>'
-  );
-
-  try {
-
-    const contents = [
-      ...chatHistory,
-      {
-        role: 'user',
-        parts: [{ text: msg }]
-      }
-    ];
-
-    const res = await fetchWithRetry(`${GEMINI_URL}?key=${API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-  system_instruction: {
-    parts: [{ text: systemContext }]
-  },
-  contents,
-  generationConfig: {
-    temperature: 0.7,
-    maxOutputTokens: 1000
-  }
-})
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.log(errText);
-      throw new Error(`서버 에러 (${res.status})`);
+      document.getElementById('chat-send').disabled = false;
+      input.focus();
     }
 
-    const data = await res.json();
+    function addMessage(role, html) {
+      const messages = document.getElementById('chat-messages');
+      const el = document.createElement('div');
+      el.className = `msg ${role}`;
+      el.innerHTML = html;
+      messages.appendChild(el);
+      messages.scrollTop = messages.scrollHeight;
+      return el;
+    }
 
-    const reply =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      '응답 없음';
+    function formatText(text) {
+      return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+    }
 
-    typingEl.innerHTML = formatText(reply);
+    function updateDashboard() {
+      document.getElementById('sidebar-empty').style.display = 'none';
+      document.getElementById('sidebar-dashboard').style.display = 'block';
 
-    chatHistory.push(
-      {
-        role: 'user',
-        parts: [{ text: msg }]
-      },
-      {
-        role: 'model',
-        parts: [{ text: reply }]
-      }
-    );
+      document.getElementById('db-grade').textContent = state.grade;
+      document.getElementById('db-lang').textContent = state.lang;
+      document.getElementById('db-level').textContent = state.level;
+      document.getElementById('db-type').textContent = state.type || '미선택';
 
-  } catch (err) {
+      const levels = ['입문', '초급', '중급', '고급'];
+      const currentIdx = levels.indexOf(state.level);
+      const bar = document.getElementById('db-level-bar');
+      bar.innerHTML = levels.map((l, i) => `
+        <span style="padding:3px 10px;border-radius:var(--radius-full);font-size:11px;font-weight:500;
+          background:${i <= currentIdx ? 'var(--sky)' : 'var(--border)'};
+          color:${i <= currentIdx ? '#fff' : 'var(--text-muted)'};">${l}</span>
+      `).join('→');
 
-    typingEl.innerHTML =
-      `<span style="color:#e53e3e">${err.message}</span>`;
-
-  }
-
-  document.getElementById('chat-send').disabled = false;
-}
-
-  function addMessage(role, html) {
-    const messages = document.getElementById('chat-messages');
-    const el = document.createElement('div');
-    el.className = `msg ${role}`;
-    el.innerHTML = html;
-    messages.appendChild(el);
-    messages.scrollTop = messages.scrollHeight;
-    return el;
-  }
-
-  function formatText(text) {
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // 마크다운 두꺼운 글씨 정규식 수정 완료
-      .replace(/\n/g, '<br>');
-  }
-</script>
+      const tips = {
+        '입문': '• 그림·몸짓으로 소통하세요\n• 핵심 단어만 또박또박 말하세요\n• 모국어 번역 앱을 활용하세요',
+        '초급': '• 짧고 쉬운 문장으로 천천히 말하세요\n• 학교생활 필수 표현 카드를 만들어주세요\n• 자주 칭찬해 자존감을 높여주세요',
+        '중급': '• 교과서 핵심 어휘를 미리 알려주세요\n• 발표 기회를 조금씩 늘려주세요\n• 친구와 짝활동으로 자연스러운 환경을 만들어주세요',
+        '고급': '• 학술적 표현과 글쓰기를 지원하세요\n• 동일한 기대치를 적용해도 됩니다\n• 이중언어 강점을 발표에 활용하게 해주세요',
+      };
+      document.getElementById('db-tips').innerHTML = (tips[state.level] || '').replace(/\n/g, '<br>');
+    }
+  </script>
 </body>
 </html>

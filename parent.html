@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>학부모 안내 — 다가치</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .parent-wrap { max-width: 860px; margin: 0 auto; padding: 48px 24px; }
+
+    /* 언어 선택 */
+    .lang-bar { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .lang-bar-label { font-size: 14px; font-weight: 500; color: var(--text-dark); white-space: nowrap; }
+    .lang-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .lang-chip { padding: 6px 14px; border-radius: var(--radius-full); border: 1.5px solid var(--border); font-size: 13px; color: var(--text-mid); cursor: pointer; background: var(--white); font-family: inherit; transition: all 0.15s; }
+    .lang-chip:hover { border-color: var(--sky); color: var(--sky); }
+    .lang-chip.selected { background: var(--sky-light); border-color: var(--sky); color: var(--sky); font-weight: 500; }
+
+    /* 탭 */
+    .tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+    .tab { padding: 12px 20px; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+    .tab.active { color: var(--sky); border-bottom-color: var(--sky); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* 알림장 번역 */
+    .translate-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px 24px; }
+    .translate-card h3 { font-size: 16px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
+    .translate-card p { font-size: 13px; color: var(--text-mid); margin-bottom: 20px; }
+    .translate-textarea { width: 100%; min-height: 140px; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-md); font-size: 14px; font-family: inherit; color: var(--text-dark); background: var(--bg); resize: vertical; transition: border-color 0.2s; }
+    .translate-textarea:focus { outline: none; border-color: var(--sky); }
+    .translate-btn { width: 100%; padding: 14px; background: var(--sky); color: #fff; border: none; border-radius: var(--radius-full); font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity 0.2s; margin-top: 12px; }
+    .translate-btn:hover { opacity: 0.88; }
+    .translate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .translate-result { margin-top: 20px; padding: 20px; background: var(--bg); border-radius: var(--radius-md); border: 1px solid var(--border); display: none; }
+    .translate-result.visible { display: block; }
+    .translate-result-label { font-size: 12px; font-weight: 600; color: var(--purple); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+    .translate-result-text { font-size: 14px; color: var(--text-mid); line-height: 1.9; white-space: pre-wrap; }
+
+    /* 용어집 */
+    .terms-search { width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-full); font-size: 14px; font-family: inherit; color: var(--text-dark); background: var(--white); margin-bottom: 20px; transition: border-color 0.2s; }
+    .terms-search:focus { outline: none; border-color: var(--sky); }
+    .terms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .term-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 18px; }
+    .term-kr { font-size: 15px; font-weight: 600; color: var(--text-dark); margin-bottom: 4px; }
+    .term-desc { font-size: 12px; color: var(--text-mid); line-height: 1.6; margin-bottom: 8px; }
+    .term-translated { font-size: 13px; color: var(--sky); font-weight: 500; }
+    .term-hidden { display: none; }
+
+    /* 상담 안내 */
+    .consult-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .consult-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px 20px; }
+    .consult-icon { font-size: 28px; margin-bottom: 12px; }
+    .consult-title { font-size: 15px; font-weight: 600; color: var(--text-dark); margin-bottom: 8px; }
+    .consult-desc { font-size: 13px; color: var(--text-mid); line-height: 1.7; margin-bottom: 14px; }
+    .consult-tag { display: inline-block; font-size: 12px; padding: 4px 12px; border-radius: var(--radius-full); background: var(--sky-light); color: var(--sky); font-weight: 500; }
+
+    .typing { display: flex; gap: 5px; align-items: center; padding: 8px 0; }
+    .typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sky-mid); animation: bounce 1.2s infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+    @media (max-width: 768px) {
+      .terms-grid { grid-template-columns: 1fr; }
+      .consult-cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">다가치</a>
+    <ul class="nav-links">
+      <li><a href="tutor.html">AI 튜터</a></li>
+      <li><a href="learn.html">학습</a></li>
+      <li><a href="map.html">지원 찾기</a></li>
+      <li><a href="teacher.html">교사 가이드</a></li>
+      <li><a href="parent.html" style="color:var(--sky);font-weight:500;">학부모 안내</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-hero">
+    <div class="hero-badge" style="margin: 0 auto 16px;">
+      <span class="hero-badge-dot"></span>Gemini AI 기반
+    </div>
+    <h1>학부모 안내</h1>
+    <p>알림장 번역, 학교 용어 안내, 상담 신청까지<br>자녀의 학교생활을 함께 이해해요</p>
+  </div>
+
+  <div class="parent-wrap">
+
+    <!-- 언어 선택 -->
+    <div class="lang-bar">
+      <div class="lang-bar-label">🌐 언어 선택</div>
+      <div class="lang-chips" id="lang-chips">
+        <button class="lang-chip selected" data-val="베트남어">🇻🇳 베트남어</button>
+        <button class="lang-chip" data-val="중국어">🇨🇳 중국어</button>
+        <button class="lang-chip" data-val="영어">🇺🇸 영어</button>
+        <button class="lang-chip" data-val="필리핀어">🇵🇭 필리핀어</button>
+        <button class="lang-chip" data-val="캄보디아어">🇰🇭 캄보디아어</button>
+        <button class="lang-chip" data-val="몽골어">🇲🇳 몽골어</button>
+        <button class="lang-chip" data-val="러시아어">🇷🇺 러시아어</button>
+        <button class="lang-chip" data-val="태국어">🇹🇭 태국어</button>
+        <button class="lang-chip" data-val="네팔어">🇳🇵 네팔어</button>
+        <button class="lang-chip" data-val="일본어">🇯🇵 일본어</button>
+      </div>
+    </div>
+
+    <!-- 탭 -->
+    <div class="tab-bar">
+      <button class="tab active" data-tab="translate">📄 알림장 번역</button>
+      <button class="tab" data-tab="terms">📖 학교 용어집</button>
+      <button class="tab" data-tab="consult">📞 상담 안내</button>
+    </div>
+
+    <!-- 탭1: 알림장 번역 -->
+    <div class="tab-content active" id="tab-translate">
+      <div class="translate-card">
+        <h3>알림장 · 가정통신문 번역</h3>
+        <p>학교에서 온 알림장이나 가정통신문 내용을 붙여넣으면 선택한 언어로 번역해드립니다</p>
+        <textarea class="translate-textarea" id="translate-input" placeholder="여기에 알림장 내용을 붙여넣으세요...
+
+예) 내일 소풍이 있습니다. 도시락과 물을 준비해 주세요. 집합 시간은 오전 8시 30분입니다."></textarea>
+        <button class="translate-btn" id="translate-btn">번역하기 →</button>
+        <div class="translate-result" id="translate-result">
+          <div class="translate-result-label" id="result-lang-label">번역 결과</div>
+          <div class="translate-result-text" id="translate-result-text"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 탭2: 용어집 -->
+    <div class="tab-content" id="tab-terms">
+      <input type="text" class="terms-search" id="terms-search" placeholder="🔍 학교 용어 검색...">
+      <div class="terms-grid" id="terms-grid"></div>
+    </div>
+
+    <!-- 탭3: 상담 안내 -->
+    <div class="tab-content" id="tab-consult">
+      <div class="consult-cards">
+        <div class="consult-card">
+          <div class="consult-icon">🏫</div>
+          <div class="consult-title">담임 선생님 상담</div>
+          <div class="consult-desc">자녀의 학교생활, 학습, 교우 관계에 대해 담임 선생님과 상담할 수 있어요. 학교 홈페이지나 알림장을 통해 상담 신청이 가능합니다.</div>
+          <span class="consult-tag">학교 통해 신청</span>
+        </div>
+        <div class="consult-card">
+          <div class="consult-icon">🌍</div>
+          <div class="consult-title">다문화가족지원센터</div>
+          <div class="consult-desc">언어 통역, 한국어 교육, 자녀 학습 지원 등 다양한 서비스를 무료로 제공합니다. 가까운 센터를 지원 찾기에서 확인하세요.</div>
+          <span class="consult-tag">무료 서비스</span>
+        </div>
+        <div class="consult-card">
+          <div class="consult-icon">📞</div>
+          <div class="consult-title">다누리 콜센터</div>
+          <div class="consult-desc">다문화가족 전용 상담 전화입니다. 13개 언어로 24시간 상담 가능합니다.</div>
+          <span class="consult-tag">☎ 1577-1366</span>
+        </div>
+        <div class="consult-card">
+          <div class="consult-icon">💻</div>
+          <div class="consult-title">온라인 상담</div>
+          <div class="consult-desc">다누리 포털(danuri.go.kr)에서 온라인 상담을 신청할 수 있어요. 한국어가 어려워도 번역 서비스를 이용할 수 있습니다.</div>
+          <span class="consult-tag">danuri.go.kr</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-logo">다가치</div>
+    <div class="footer-text">© 2026 다가치팀</div>
+    <div class="footer-badge">제8회 교육 공공데이터 AI활용대회</div>
+  </footer>
+
+  <script>
+    const API_KEY = 'AIzaSyCkw8fXemwld30RZeqsqq2822Op91UbwNE';
+    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+
+    let selectedLang = '베트남어';
+
+    // 언어 선택
+    document.getElementById('lang-chips').querySelectorAll('.lang-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.getElementById('lang-chips').querySelectorAll('.lang-chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        selectedLang = chip.dataset.val;
+        renderTerms();
+      });
+    });
+
+    // 탭 전환
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    // 번역
+    document.getElementById('translate-btn').addEventListener('click', async () => {
+      const text = document.getElementById('translate-input').value.trim();
+      if (!text) { alert('번역할 내용을 입력해주세요!'); return; }
+
+      const btn = document.getElementById('translate-btn');
+      btn.disabled = true;
+      btn.textContent = '번역 중...';
+
+      const result = document.getElementById('translate-result');
+      result.classList.add('visible');
+      document.getElementById('translate-result-text').innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+      document.getElementById('result-lang-label').textContent = `${selectedLang} 번역 결과`;
+
+      const prompt = `다음 한국어 학교 알림장/가정통신문을 ${selectedLang}로 번역해주세요.
+학부모가 이해하기 쉽도록 자연스럽게 번역하고, 학교 관련 용어는 정확하게 번역해주세요.
+번역문만 출력하세요.
+
+원문:
+${text}`;
+
+      try {
+        const res = await fetch(`${GEMINI_URL}?key=${API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 1000 }
+          })
+        });
+        const data = await res.json();
+        const translated = data.candidates?.[0]?.content?.parts?.[0]?.text || '번역에 실패했습니다.';
+        document.getElementById('translate-result-text').textContent = translated;
+      } catch (err) {
+        document.getElementById('translate-result-text').textContent = '오류가 발생했습니다. 다시 시도해주세요.';
+      }
+
+      btn.disabled = false;
+      btn.textContent = '번역하기 →';
+    });
+
+    // 용어집 데이터
+    const TERMS = [
+      { kr: '가정통신문', desc: '학교에서 부모님께 보내는 안내 편지', en: 'School Newsletter', vi: 'Thông báo từ trường', zh: '家校通讯', mn: 'Сургуулийн мэдэгдэл', ru: 'Уведомление школы', th: 'จดหมายจากโรงเรียน', ne: 'विद्यालयको सूचना', km: 'សារពីសាលា', tl: 'Liham ng paaralan', ja: '学校だより' },
+      { kr: '담임선생님', desc: '우리 반을 담당하는 선생님', en: 'Homeroom Teacher', vi: 'Giáo viên chủ nhiệm', zh: '班主任', mn: 'Анги удирдсан багш', ru: 'Классный руководитель', th: 'ครูประจำชั้น', ne: 'कक्षा शिक्षक', km: 'គ្រូប្រចាំថ្នាក់', tl: 'Guro sa klase', ja: '担任の先生' },
+      { kr: '소풍', desc: '학교에서 다 같이 밖으로 나가는 날', en: 'Field Trip', vi: 'Dã ngoại', zh: '郊游', mn: 'Аялал', ru: 'Экскурсия', th: 'ทัศนศึกษา', ne: 'भ्रमण', km: 'ដំណើរកម្សាន្ត', tl: 'Ekskursyon', ja: '遠足' },
+      { kr: '수행평가', desc: '시험 외에 평소 공부한 것을 확인하는 평가', en: 'Performance Assessment', vi: 'Đánh giá thực hành', zh: '平时成绩', mn: 'Гүйцэтгэлийн үнэлгээ', ru: 'Текущая оценка', th: 'การประเมินผล', ne: 'प्रदर्शन मूल्यांकन', km: 'ការវាយតម្លៃ', tl: 'Performance assessment', ja: '実技評価' },
+      { kr: '준비물', desc: '수업이나 활동에 필요한 물건', en: 'Supplies needed', vi: 'Đồ dùng cần mang', zh: '需要准备的物品', mn: 'Бэлтгэх зүйлс', ru: 'Необходимые принадлежности', th: 'อุปกรณ์ที่ต้องนำมา', ne: 'आवश्यक सामग्री', km: 'សម្ភារៈដែលត្រូវការ', tl: 'Mga kailangan', ja: '持ち物' },
+      { kr: '결석', desc: '학교에 오지 못하는 것', en: 'Absence', vi: 'Vắng mặt', zh: '缺席', mn: 'Тасалсан', ru: 'Отсутствие', th: 'การขาดเรียน', ne: 'अनुपस्थिति', km: 'អវត្តមាន', tl: 'Absent', ja: '欠席' },
+      { kr: '조퇴', desc: '학교에서 일찍 집에 가는 것', en: 'Early dismissal', vi: 'Về sớm', zh: '早退', mn: 'Эрт явах', ru: 'Ранний уход', th: 'กลับก่อนเวลา', ne: 'समयभन्दा अगाडि छोड्नु', km: 'ចេញមុន', tl: 'Umuwi nang maaga', ja: '早退' },
+      { kr: '알림장', desc: '선생님이 매일 써주는 숙제나 준비물 안내', en: 'Daily notebook', vi: 'Sổ thông báo hàng ngày', zh: '联系本', mn: 'Өдөр тутмын дэвтэр', ru: 'Дневник', th: 'สมุดบันทึกประจำวัน', ne: 'दैनिक नोटबुक', km: 'សៀវភៅប្រចាំថ្ងៃ', tl: 'Araw-araw na notebook', ja: '連絡帳' },
+      { kr: '학부모 상담', desc: '부모님과 선생님이 아이에 대해 이야기하는 시간', en: 'Parent-teacher conference', vi: 'Họp phụ huynh', zh: '家长会谈', mn: 'Эцэг эхийн зөвлөгөө', ru: 'Родительское собрание', th: 'การประชุมผู้ปกครอง', ne: 'अभिभावक-शिक्षक बैठक', km: 'ប្រជុំ父母', tl: 'Parent-teacher meeting', ja: '保護者面談' },
+      { kr: '운동회', desc: '학교 전체가 함께하는 체육 행사', en: 'Sports day', vi: 'Ngày thể thao', zh: '运动会', mn: 'Спортын баяр', ru: 'День спорта', th: 'วันกีฬา', ne: 'खेलकुद दिवस', km: 'ថ្ងៃកីឡា', tl: 'Sports day', ja: '運動会' },
+      { kr: '급식', desc: '학교에서 먹는 점심', en: 'School lunch', vi: 'Bữa trưa tại trường', zh: '学校午餐', mn: 'Сургуулийн өдрийн хоол', ru: 'Школьный обед', th: 'อาหารกลางวันโรงเรียน', ne: 'विद्यालयको खाना', km: 'អាហារថ្ងៃត្រង់', tl: 'Tanghalian sa paaralan', ja: '給食' },
+      { kr: '방학', desc: '학교를 쉬는 기간', en: 'School vacation', vi: 'Kỳ nghỉ học', zh: '放假', mn: 'Амралт', ru: 'Каникулы', th: 'ปิดเทอม', ne: 'बिदा', km: 'វិស្សមកាល', tl: 'Bakasyon', ja: '夏休み' },
+    ];
+
+    const langKeyMap = {
+      '영어': 'en', '베트남어': 'vi', '중국어': 'zh', '몽골어': 'mn',
+      '러시아어': 'ru', '태국어': 'th', '네팔어': 'ne', '캄보디아어': 'km',
+      '필리핀어': 'tl', '일본어': 'ja'
+    };
+
+    function renderTerms(query = '') {
+      const langKey = langKeyMap[selectedLang] || 'en';
+      const grid = document.getElementById('terms-grid');
+      const filtered = TERMS.filter(t =>
+        !query || t.kr.includes(query) || t.desc.includes(query)
+      );
+      if (filtered.length === 0) {
+        grid.innerHTML = '<p style="color:var(--text-muted);font-size:14px;grid-column:1/-1;text-align:center;padding:20px 0">검색 결과가 없어요</p>';
+        return;
+      }
+      grid.innerHTML = filtered.map(t => `
+        <div class="term-card">
+          <div class="term-kr">${t.kr}</div>
+          <div class="term-desc">${t.desc}</div>
+          <div class="term-translated">${t[langKey] || t.en}</div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('terms-search').addEventListener('input', e => {
+      renderTerms(e.target.value.trim());
+    });
+
+    renderTerms();
+  </script>
+
+</body>
+</html>

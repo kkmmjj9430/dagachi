@@ -7,50 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="style.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  :root {
-    --sky: #38BDF8;
-    --sky-light: #E0F2FE;
-    --sky-dark: #0284C7;
-    --purple: #A78BFA;
-    --purple-light: #EDE9FE;
-    --purple-dark: #7C3AED;
-    --red: #FB7185;
-    --red-light: #FFF1F2;
-    --orange: #FB923C;
-    --orange-light: #FFF7ED;
-    --green: #34D399;
-    --green-light: #ECFDF5;
-    --bg: #F8FAFF;
-    --card: #FFFFFF;
-    --border: #E8EEFA;
-    --text: #1E293B;
-    --text-sub: #64748B;
-    --text-muted: #94A3B8;
-    --shadow: 0 2px 12px rgba(56,189,248,0.10);
-    --shadow-lg: 0 8px 32px rgba(56,189,248,0.15);
-    --radius: 16px;
-    --radius-sm: 10px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-
-  /* NAV */
-  nav {
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 2rem;
-    position: sticky; top: 0; z-index: 1000;
-    display: flex; align-items: center; justify-content: space-between; height: 60px;
-  }
-  .nav-logo { font-weight: 700; font-size: 1.2rem; color: var(--sky-dark); text-decoration: none; display: flex; align-items: center; gap: 6px; }
-  .nav-logo span { font-size: 1.4rem; }
-  .nav-links { display: flex; gap: 8px; }
-  .nav-links a { text-decoration: none; color: var(--text-sub); font-size: 0.85rem; font-weight: 500; padding: 6px 14px; border-radius: 20px; transition: all 0.2s; }
-  .nav-links a:hover, .nav-links a.active { background: var(--sky-light); color: var(--sky-dark); }
-
   /* LAYOUT */
   .page-wrap { display: grid; grid-template-columns: 380px 1fr; height: calc(100vh - 60px); }
 
@@ -179,13 +138,18 @@
 </head>
 <body>
 
-<nav>
-  <a class="nav-logo" href="index.html"><span>🌏</span> 다가치</a>
-  <div class="nav-links">
-    <a href="tutor.html">AI 튜터</a>
-    <a href="map.html" class="active">지원 자원 매칭</a>
-    <a href="teacher.html">교사 가이드</a>
-  </div>
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">다가치</a>
+    <ul class="nav-links">
+      <li><a href="tutor.html">AI 튜터</a></li>
+      <li><a href="learn.html">학습</a></li>
+      <li><a href="map.html" style="color:var(--sky);font-weight:500;">지원 찾기</a></li>
+      <li><a href="teacher.html">교사 가이드</a></li>
+      <li><a href="parent.html">학부모 안내</a></li>
+    </ul>
+  </nav>
+
+
 </nav>
 
 <div class="page-wrap">
@@ -654,16 +618,6 @@ function toggleFilter(el, type) {
   else activeFilters.add(type);
   const q = document.getElementById('search-input').value.trim();
   renderList(getFilteredCenters(q));
-  
-  // 지도 마커도 필터링
-  CENTERS.forEach((c, i) => {
-    const riskType = getRisk(c.sido);
-    if (activeFilters.has(riskType)) {
-      markers[i].addTo(map);
-    } else {
-      markers[i].remove();
-    }
-  });
 }
 
 function searchCenters() {

@@ -7,19 +7,70 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <style>
+    .role-section { padding: 56px 40px 72px; }
+    .role-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; max-width: 960px; margin: 0 auto; }
+    .role-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 28px 22px 24px;
+      border: 1.5px solid var(--border);
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      text-decoration: none; color: inherit;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .role-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(108,142,255,0.12); }
+    .role-card.student:hover { border-color: #7DD3FC; }
+    .role-card.teacher:hover { border-color: var(--sky); }
+    .role-card.parent:hover { border-color: var(--purple); }
+    .role-top { position: absolute; top:0; left:0; right:0; height:4px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+    .student .role-top { background: #7DD3FC; }
+    .teacher .role-top { background: var(--sky); }
+    .parent .role-top { background: var(--purple); }
+    .role-icon { width:60px; height:60px; border-radius: var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:26px; margin-top:6px; }
+    .student .role-icon { background: #E0F2FE; }
+    .teacher .role-icon { background: var(--sky-light); }
+    .parent .role-icon { background: var(--purple-light); }
+    .role-name { font-size:20px; font-weight:700; color: var(--text-dark); }
+    .role-desc { font-size:13px; color: var(--text-mid); text-align:center; line-height:1.7; }
+    .role-list { list-style:none; padding:0; margin:0; width:100%; border-top:1px solid var(--border-soft); padding-top:12px; }
+    .role-list li { font-size:13px; color:var(--text-mid); padding:6px 0; border-bottom:1px solid var(--border-soft); display:flex; align-items:center; gap:8px; }
+    .role-list li:last-child { border-bottom:none; }
+    .role-btn { margin-top:4px; padding:11px 28px; border-radius:var(--radius-full); font-size:14px; font-weight:500; border:none; cursor:pointer; font-family:inherit; transition:opacity 0.2s; text-decoration:none; display:inline-block; color:#fff; }
+    .role-btn:hover { opacity:0.88; }
+    .student .role-btn { background: #7DD3FC; }
+    .teacher .role-btn { background: var(--sky); }
+    .parent .role-btn { background: var(--purple); }
+
+    .map-band { background: var(--text-dark); padding:14px 40px; display:flex; align-items:center; justify-content:center; gap:20px; }
+    .map-band-text { font-size:14px; color:rgba(255,255,255,0.8); }
+    .map-band-text strong { color:#fff; }
+    .map-band-btn { padding:8px 20px; background:var(--sky); color:#fff; border-radius:var(--radius-full); font-size:13px; font-weight:500; text-decoration:none; transition:opacity 0.2s; white-space:nowrap; }
+    .map-band-btn:hover { opacity:0.88; }
+
+    @media (max-width:768px) {
+      .role-cards { grid-template-columns:1fr; }
+      .role-section { padding: 40px 20px; }
+      .map-band { flex-direction:column; gap:10px; padding:14px 20px; }
+    }
+  </style>
 </head>
 <body>
 
   <!-- NAV -->
   <nav class="nav">
-    <div class="nav-logo">다가치</div>
+    <a href="index.html" class="nav-logo">다가치</a>
     <ul class="nav-links">
       <li><a href="tutor.html">AI 튜터</a></li>
+      <li><a href="learn.html">학습</a></li>
       <li><a href="map.html">지원 찾기</a></li>
       <li><a href="teacher.html">교사 가이드</a></li>
+      <li><a href="parent.html">학부모 안내</a></li>
     </ul>
-    <a href="tutor.html" class="nav-cta">시작하기</a>
   </nav>
+
+
 
   <!-- HERO -->
   <section class="hero">
@@ -35,68 +86,82 @@
         <span class="sky">문화까지</span>, <span class="purple">함께</span>
       </h1>
       <p class="hero-sub">
-        다문화 학생 119만 명 시대<br>
-        AI가 학생과 교사, 지역을 하나로 잇습니다
+        다문화 학생 201,395명 시대<br>
+        AI가 학생과 교사, 가정, 지역을 하나로 잇습니다
       </p>
-      <div class="hero-btns">
-        <a href="tutor.html" class="btn-primary">학습 시작하기</a>
-        <a href="teacher.html" class="btn-secondary">교사용 가이드 →</a>
-      </div>
       <p class="hero-hint">무료 · 로그인 없이 바로 시작</p>
+    </div>
+  </section>
+
+  <!-- 역할 선택 -->
+  <section class="role-section">
+    <p class="section-eyebrow">나는 누구인가요?</p>
+    <h2 class="section-title">역할을 선택해주세요</h2>
+    <p class="section-sub">맞춤 서비스로 바로 안내해드립니다</p>
+
+    <div class="role-cards">
+
+      <div class="role-card student" style="cursor:default;">
+        <div class="role-top"></div>
+        <div class="role-icon">🎓</div>
+        <div class="role-name">학생</div>
+        <div class="role-desc">한국어를 배우고 싶은<br>다문화 학생</div>
+        <ul class="role-list">
+          <li>📚 AI 한국어 튜터</li>
+          <li>🎯 레벨 진단 & 단계별 학습</li>
+          <li>🔁 복습 카드 & 파이널 테스트</li>
+          <li>💬 질문 챗봇</li>
+        </ul>
+        <a href="tutor.html" class="role-btn" style="text-align:center;">AI 튜터 시작하기 →</a>
+        <a href="learn.html" style="font-size:13px;color:var(--sky);font-weight:500;text-decoration:none;">📖 단계별 학습하기 →</a>
+      </div>
+
+      <a href="teacher.html" class="role-card teacher">
+        <div class="role-top"></div>
+        <div class="role-icon">👩‍🏫</div>
+        <div class="role-name">교사</div>
+        <div class="role-desc">다문화 학생을 담당한<br>선생님</div>
+        <ul class="role-list">
+          <li>📋 맞춤 지도 가이드</li>
+          <li>💬 수업 표현집 (언어별)</li>
+          <li>🤔 고민 유형별 대응법</li>
+          <li>📊 학생 대시보드</li>
+        </ul>
+        <span class="role-btn">가이드 보기 →</span>
+      </a>
+
+      <a href="parent.html" class="role-card parent">
+        <div class="role-top"></div>
+        <div class="role-icon">👨‍👩‍👧</div>
+        <div class="role-name">학부모</div>
+        <div class="role-desc">자녀의 학교생활이<br>궁금한 부모님</div>
+        <ul class="role-list">
+          <li>📄 알림장 & 가정통신문 번역</li>
+          <li>📖 학교 용어집</li>
+          <li>📈 자녀 학습 진도 확인</li>
+          <li>📞 상담 신청 안내</li>
+        </ul>
+        <span class="role-btn">안내 보기 →</span>
+      </a>
+
     </div>
   </section>
 
   <!-- STATS -->
   <div class="stats-bar">
     <div class="stat">
-      <div class="stat-num">119<span class="stat-unit">만</span></div>
-      <div class="stat-label">국내 귀화 외국인</div>
+      <div class="stat-num">201,395<span class="stat-unit">명</span></div>
+      <div class="stat-label">2025년 다문화 학생 수</div>
     </div>
     <div class="stat">
-      <div class="stat-num">3.8<span class="stat-unit">%</span></div>
-      <div class="stat-label">초중고 다문화 학생 비율</div>
+      <div class="stat-num">4.0<span class="stat-unit">%</span></div>
+      <div class="stat-label">전체 학생 중 다문화 비율</div>
     </div>
     <div class="stat">
-      <div class="stat-num">5<span class="stat-unit">배↑</span></div>
+      <div class="stat-num">4.3<span class="stat-unit">배↑</span></div>
       <div class="stat-label">2012년 대비 증가율</div>
     </div>
   </div>
-
-  <!-- SERVICES -->
-  <section class="section">
-    <p class="section-eyebrow">Core Services</p>
-    <h2 class="section-title">세 가지 핵심 서비스</h2>
-    <p class="section-sub">학생도, 교사도, 지역도 — 아무도 혼자 남지 않도록</p>
-    <div class="cards">
-      <a href="tutor.html" class="card">
-        <div class="card-icon ci-blue">
-          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        </div>
-        <h3 class="card-title">AI 한국어 튜터</h3>
-        <p class="card-desc">학년·언어권·수준을 입력하면 문화 맥락까지 설명하는 맞춤 커리큘럼을 제공합니다</p>
-        <span class="card-tag ct-blue">Gemini AI</span>
-        <span class="card-arrow">→</span>
-      </a>
-      <a href="map.html" class="card">
-        <div class="card-icon ci-purple">
-          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-        </div>
-        <h3 class="card-title">지원 자원 매칭</h3>
-        <p class="card-desc">학교 위치 기반 주변 센터 자동 연결, 공백 지역 위험도 예측 지도로 시각화합니다</p>
-        <span class="card-tag ct-purple">공백 예측 모델</span>
-        <span class="card-arrow">→</span>
-      </a>
-      <a href="teacher.html" class="card">
-        <div class="card-icon ci-sky">
-          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-        </div>
-        <h3 class="card-title">교사 가이드 AI</h3>
-        <p class="card-desc">국적·언어·학년 입력 시 맞춤 지도법과 문화 소통 팁을 즉시 제안합니다</p>
-        <span class="card-tag ct-sky">Gemini AI</span>
-        <span class="card-arrow">→</span>
-      </a>
-    </div>
-  </section>
 
   <!-- HOW IT WORKS -->
   <section class="how">
@@ -104,8 +169,8 @@
     <div class="how-steps">
       <div class="how-step">
         <div class="how-num">1</div>
-        <div class="how-label">정보 입력</div>
-        <div class="how-desc">학년, 언어권,<br>학교 위치 입력</div>
+        <div class="how-label">역할 선택</div>
+        <div class="how-desc">학생·교사·학부모<br>맞춤 서비스 연결</div>
       </div>
       <div class="how-step how-step--mid">
         <div class="how-num how-num--purple">2</div>

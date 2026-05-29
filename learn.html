@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>한국어 학습 — 다가치</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="learn-data.js"></script>
+  <style>
+    .learn-wrap { max-width: 760px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    /* 화면 전환 */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* 레벨 선택 */
+    .level-cards { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; margin-top: 24px; }
+    .level-card {
+      background: var(--white); border: 2px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px 20px;
+      cursor: pointer; transition: all 0.2s; text-align: center;
+    }
+    .level-card:hover { border-color: var(--sky); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(108,142,255,0.12); }
+    .level-card.selected { border-color: var(--sky); background: var(--sky-light); }
+    .level-emoji { font-size: 32px; margin-bottom: 10px; }
+    .level-name { font-size: 18px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px; }
+    .level-desc { font-size: 13px; color: var(--text-mid); }
+    .level-badge { display: inline-block; margin-top: 10px; font-size: 12px; padding: 3px 10px; border-radius: var(--radius-full); background: var(--sky-light); color: var(--sky); font-weight: 500; }
+
+    /* 진단 테스트 */
+    .diagnosis-progress { height: 6px; background: var(--border); border-radius: var(--radius-full); margin-bottom: 28px; overflow: hidden; }
+    .diagnosis-progress-bar { height: 100%; background: var(--sky); border-radius: var(--radius-full); transition: width 0.4s; }
+    .diagnosis-q { font-size: 18px; font-weight: 600; color: var(--text-dark); margin-bottom: 24px; line-height: 1.5; }
+    .diagnosis-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .diagnosis-option {
+      background: var(--white); border: 2px solid var(--border);
+      border-radius: var(--radius-md); padding: 14px 16px;
+      cursor: pointer; font-size: 15px; font-family: inherit;
+      color: var(--text-dark); transition: all 0.15s; text-align: left;
+    }
+    .diagnosis-option:hover { border-color: var(--sky); background: var(--sky-light); }
+    .diagnosis-option.correct { border-color: #34D399; background: #ECFDF5; color: #065F46; }
+    .diagnosis-option.wrong { border-color: #FB7185; background: #FFF1F2; color: #BE123C; }
+
+    /* 학습 카드 */
+    .unit-header { margin-bottom: 28px; }
+    .unit-progress-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .unit-progress { flex: 1; height: 8px; background: var(--border); border-radius: var(--radius-full); overflow: hidden; }
+    .unit-progress-bar { height: 100%; background: var(--sky); border-radius: var(--radius-full); transition: width 0.3s; }
+    .unit-progress-text { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+
+    .learn-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 40px 32px;
+      text-align: center; margin-bottom: 20px;
+      min-height: 260px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+    }
+    .card-kr { font-size: 48px; font-weight: 700; color: var(--text-dark); }
+    .card-sound { font-size: 18px; color: var(--sky); font-weight: 500; }
+    .card-meaning { font-size: 16px; color: var(--text-mid); }
+    .card-example { font-size: 14px; color: var(--text-muted); background: var(--bg); padding: 10px 16px; border-radius: var(--radius-md); line-height: 1.7; }
+    .card-nav { display: flex; gap: 12px; justify-content: center; }
+    .btn-nav {
+      padding: 12px 28px; border-radius: var(--radius-full);
+      font-size: 15px; font-weight: 500; border: none; cursor: pointer;
+      font-family: inherit; transition: all 0.15s;
+    }
+    .btn-prev { background: var(--white); color: var(--sky); border: 1.5px solid var(--sky-mid); }
+    .btn-prev:hover { background: var(--sky-light); }
+    .btn-next { background: var(--sky); color: #fff; }
+    .btn-next:hover { opacity: 0.88; }
+
+    /* 퀴즈 */
+    .quiz-q { font-size: 18px; font-weight: 600; color: var(--text-dark); margin-bottom: 24px; text-align: center; background: var(--bg); padding: 20px; border-radius: var(--radius-md); }
+    .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .quiz-option {
+      background: var(--white); border: 2px solid var(--border);
+      border-radius: var(--radius-md); padding: 14px 16px;
+      cursor: pointer; font-size: 15px; font-family: inherit;
+      color: var(--text-dark); transition: all 0.15s;
+    }
+    .quiz-option:hover:not(:disabled) { border-color: var(--sky); background: var(--sky-light); }
+    .quiz-option.correct { border-color: #34D399; background: #ECFDF5; color: #065F46; font-weight: 600; }
+    .quiz-option.wrong { border-color: #FB7185; background: #FFF1F2; color: #BE123C; }
+    .quiz-option:disabled { cursor: not-allowed; }
+    .quiz-result-msg { text-align: center; font-size: 15px; font-weight: 500; padding: 14px; border-radius: var(--radius-md); margin-top: 14px; display: none; }
+
+    /* 복습 카드 */
+    .review-list { display: flex; flex-direction: column; gap: 10px; }
+    .review-item {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 16px 20px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .review-kr { font-size: 20px; font-weight: 700; color: var(--text-dark); min-width: 80px; }
+    .review-info { flex: 1; }
+    .review-meaning { font-size: 14px; color: var(--sky); font-weight: 500; }
+    .review-example { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    /* 결과 */
+    .result-wrap { text-align: center; padding: 40px 0; }
+    .result-emoji { font-size: 64px; margin-bottom: 16px; }
+    .result-title { font-size: 24px; font-weight: 700; color: var(--text-dark); margin-bottom: 8px; }
+    .result-desc { font-size: 15px; color: var(--text-mid); margin-bottom: 28px; }
+    .result-score { font-size: 48px; font-weight: 700; color: var(--sky); margin: 20px 0; }
+
+    /* 공통 버튼 */
+    .btn-primary-full { width: 100%; padding: 16px; background: var(--sky); color: #fff; border: none; border-radius: var(--radius-full); font-size: 16px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity 0.2s; margin-top: 8px; }
+    .btn-primary-full:hover { opacity: 0.88; }
+    .btn-secondary-full { width: 100%; padding: 14px; background: var(--white); color: var(--sky); border: 1.5px solid var(--sky-mid); border-radius: var(--radius-full); font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.2s; margin-top: 8px; }
+    .btn-secondary-full:hover { background: var(--sky-light); }
+
+    /* 탭 */
+    .learn-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .learn-tab { padding: 11px 18px; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+    .learn-tab.active { color: var(--sky); border-bottom-color: var(--sky); }
+
+    /* 홈 대시보드 */
+    .home-progress-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; }
+    .home-level-badge { display: inline-block; padding: 4px 14px; border-radius: var(--radius-full); background: var(--sky-light); color: var(--sky); font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+    .home-progress-bar-wrap { height: 10px; background: var(--border); border-radius: var(--radius-full); overflow: hidden; margin: 10px 0; }
+    .home-progress-bar { height: 100%; background: var(--sky); border-radius: var(--radius-full); transition: width 0.5s; }
+
+    @media (max-width: 600px) {
+      .level-cards { grid-template-columns: 1fr; }
+      .diagnosis-options { grid-template-columns: 1fr; }
+      .quiz-options { grid-template-columns: 1fr; }
+      .card-kr { font-size: 36px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">다가치</a>
+    <ul class="nav-links">
+      <li><a href="tutor.html">AI 튜터</a></li>
+      <li><a href="learn.html" style="color:var(--sky);font-weight:500;">학습</a></li>
+      <li><a href="map.html">지원 찾기</a></li>
+      <li><a href="teacher.html">교사 가이드</a></li>
+      <li><a href="parent.html">학부모 안내</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-hero">
+    <div class="hero-badge" style="margin:0 auto 16px;">
+      <span class="hero-badge-dot"></span>단계별 한국어 학습
+    </div>
+    <h1>한국어 학습</h1>
+    <p>내 수준에 맞는 단계별 학습으로<br>한국어를 차근차근 배워요</p>
+  </div>
+
+  <div class="learn-wrap">
+
+    <!-- 화면 1: 홈 / 레벨 선택 -->
+    <div class="screen active" id="screen-home">
+      <div class="learn-tabs">
+        <button class="learn-tab active" data-screen="level-select">📚 학습 시작</button>
+        <button class="learn-tab" data-screen="review">🔁 복습 카드</button>
+      </div>
+
+      <!-- 저장된 진도 있으면 표시 -->
+      <div id="home-progress-section" style="display:none;">
+        <div class="home-progress-card">
+          <div class="home-level-badge" id="home-level-badge">초급</div>
+          <div style="font-size:16px;font-weight:600;color:var(--text-dark);margin-bottom:4px;" id="home-unit-title">Day 1 — 교실 단어</div>
+          <div style="font-size:13px;color:var(--text-mid);" id="home-progress-text">진도 0/5</div>
+          <div class="home-progress-bar-wrap">
+            <div class="home-progress-bar" id="home-progress-bar" style="width:0%"></div>
+          </div>
+          <button class="btn-primary-full" onclick="continueLearn()">이어서 학습하기 →</button>
+          <button class="btn-secondary-full" onclick="showLevelSelect()">레벨 다시 선택</button>
+        </div>
+      </div>
+
+      <!-- 레벨 선택 -->
+      <div id="level-select-section">
+        <p class="section-eyebrow" style="text-align:left;margin-bottom:8px;">레벨 선택</p>
+        <h2 style="font-size:20px;font-weight:700;color:var(--text-dark);margin-bottom:6px;">어느 단계부터 시작할까요?</h2>
+        <p style="font-size:14px;color:var(--text-mid);margin-bottom:4px;">잘 모르겠으면 <span style="color:var(--sky);cursor:pointer;font-weight:500;" onclick="startDiagnosis()">레벨 진단 테스트 →</span></p>
+
+        <div class="level-cards">
+          <div class="level-card" onclick="selectLevel('입문')">
+            <div class="level-emoji">🔤</div>
+            <div class="level-name">입문</div>
+            <div class="level-desc">한글 자모부터 시작해요</div>
+            <div class="level-badge">ㄱㄴㄷ 자모</div>
+          </div>
+          <div class="level-card" onclick="selectLevel('기초')">
+            <div class="level-emoji">👋</div>
+            <div class="level-name">기초</div>
+            <div class="level-desc">인사와 기본 단어를 배워요</div>
+            <div class="level-badge">안녕하세요</div>
+          </div>
+          <div class="level-card" onclick="selectLevel('초급')">
+            <div class="level-emoji">🏫</div>
+            <div class="level-name">초급</div>
+            <div class="level-desc">학교생활 표현을 배워요</div>
+            <div class="level-badge">교실, 수업 표현</div>
+          </div>
+          <div class="level-card" onclick="selectLevel('중급')">
+            <div class="level-emoji">💬</div>
+            <div class="level-name">중급</div>
+            <div class="level-desc">일상회화와 교과 어휘를 배워요</div>
+            <div class="level-badge">감정, 학업 표현</div>
+          </div>
+          <div class="level-card" onclick="selectLevel('고급')" style="grid-column:1/-1;">
+            <div class="level-emoji">🎓</div>
+            <div class="level-name">고급</div>
+            <div class="level-desc">발표, 글쓰기, 학술 표현을 배워요</div>
+            <div class="level-badge">발표, 토론, 진로</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 복습 카드 -->
+      <div id="review-section" style="display:none;">
+        <div id="review-list-wrap"></div>
+      </div>
+    </div>
+
+    <!-- 화면 2: 레벨 진단 -->
+    <div class="screen" id="screen-diagnosis">
+      <h2 style="font-size:22px;font-weight:700;color:var(--text-dark);margin-bottom:6px;">레벨 진단 테스트</h2>
+      <p style="font-size:14px;color:var(--text-mid);margin-bottom:20px;">10문제로 나의 한국어 수준을 알아봐요</p>
+      <div class="diagnosis-progress">
+        <div class="diagnosis-progress-bar" id="diagnosis-bar" style="width:0%"></div>
+      </div>
+      <div id="diagnosis-q-num" style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">1 / 10</div>
+      <div class="diagnosis-q" id="diagnosis-q"></div>
+      <div class="diagnosis-options" id="diagnosis-options"></div>
+      <div id="diagnosis-next-wrap" style="display:none;margin-top:16px;">
+        <button class="btn-primary-full" onclick="nextDiagnosis()">다음 →</button>
+      </div>
+    </div>
+
+    <!-- 화면 3: 학습 (단어 카드) -->
+    <div class="screen" id="screen-learn">
+      <div class="unit-header">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div>
+            <span id="learn-level-badge" style="font-size:12px;font-weight:600;color:var(--sky);background:var(--sky-light);padding:3px 12px;border-radius:var(--radius-full);">초급</span>
+            <span id="learn-day-badge" style="font-size:12px;color:var(--text-muted);margin-left:8px;">Day 1</span>
+          </div>
+          <span id="learn-unit-title" style="font-size:14px;font-weight:500;color:var(--text-dark);"></span>
+        </div>
+        <div class="unit-progress-wrap">
+          <div class="unit-progress">
+            <div class="unit-progress-bar" id="learn-progress-bar" style="width:0%"></div>
+          </div>
+          <div class="unit-progress-text" id="learn-progress-text">0/5</div>
+        </div>
+      </div>
+
+      <div class="learn-card" id="learn-card">
+        <div class="card-kr" id="card-kr"></div>
+        <div class="card-sound" id="card-sound"></div>
+        <div class="card-meaning" id="card-meaning"></div>
+        <div class="card-example" id="card-example"></div>
+      </div>
+
+      <div id="learn-quiz-section" style="display:none;">
+        <div class="quiz-q" id="quiz-q"></div>
+        <div class="quiz-options" id="quiz-options"></div>
+        <div class="quiz-result-msg" id="quiz-result-msg"></div>
+        <div id="quiz-next-wrap" style="display:none;margin-top:14px;">
+          <button class="btn-primary-full" onclick="nextQuiz()">다음 →</button>
+        </div>
+      </div>
+
+      <div class="card-nav" id="card-nav">
+        <button class="btn-nav btn-prev" onclick="prevCard()">← 이전</button>
+        <button class="btn-nav btn-next" onclick="nextCard()">다음 →</button>
+      </div>
+    </div>
+
+    <!-- 화면 4: 복습 & 테스트 결과 -->
+    <div class="screen" id="screen-result">
+      <div class="result-wrap">
+        <div class="result-emoji" id="result-emoji">🎉</div>
+        <div class="result-title" id="result-title">오늘 학습 완료!</div>
+        <div class="result-score" id="result-score"></div>
+        <div class="result-desc" id="result-desc"></div>
+        <button class="btn-primary-full" onclick="goHome()" style="max-width:320px;margin:0 auto;">홈으로 →</button>
+        <button class="btn-secondary-full" onclick="nextDay()" style="max-width:320px;margin:8px auto 0;" id="btn-next-day">다음 날 학습하기 →</button>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-logo">다가치</div>
+    <div class="footer-text">© 2026 다가치팀</div>
+    <div class="footer-badge">제8회 교육 공공데이터 AI활용대회</div>
+  </footer>
+
+  <script>
+    // ── 상태 ──
+    let currentLevel = '';
+    let currentDay = 1;
+    let currentItemIdx = 0;
+    let isQuizMode = false;
+    let quizAnswered = false;
+    let quizScore = 0;
+    let diagnosisIdx = 0;
+    let diagnosisScores = { 입문: 0, 기초: 0, 초급: 0, 중급: 0, 고급: 0 };
+
+    // ── localStorage ──
+    function saveProgress() {
+      localStorage.setItem('dagachi_level', currentLevel);
+      localStorage.setItem('dagachi_day', currentDay);
+      localStorage.setItem('dagachi_idx', currentItemIdx);
+    }
+    function loadProgress() {
+      return {
+        level: localStorage.getItem('dagachi_level'),
+        day: parseInt(localStorage.getItem('dagachi_day')) || 1,
+        idx: parseInt(localStorage.getItem('dagachi_idx')) || 0
+      };
+    }
+    function saveReview(item) {
+      let reviews = JSON.parse(localStorage.getItem('dagachi_reviews') || '[]');
+      if (!reviews.find(r => r.kr === item.kr)) {
+        reviews.unshift({ ...item, savedAt: Date.now() });
+        if (reviews.length > 50) reviews = reviews.slice(0, 50);
+        localStorage.setItem('dagachi_reviews', JSON.stringify(reviews));
+      }
+    }
+
+    // ── 화면 전환 ──
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // ── 홈 초기화 ──
+    function initHome() {
+      showScreen('screen-home');
+      const prog = loadProgress();
+      if (prog.level && CURRICULUM[prog.level]) {
+        document.getElementById('home-progress-section').style.display = 'block';
+        document.getElementById('level-select-section').style.display = 'none';
+        document.getElementById('home-level-badge').textContent = prog.level;
+        const unit = CURRICULUM[prog.level].units[prog.day - 1];
+        document.getElementById('home-unit-title').textContent = `Day ${prog.day} — ${unit?.title || ''}`;
+        const total = CURRICULUM[prog.level].units[prog.day - 1]?.items?.length || 5;
+        document.getElementById('home-progress-text').textContent = `진도 ${prog.idx}/${total}`;
+        document.getElementById('home-progress-bar').style.width = `${(prog.idx / total) * 100}%`;
+      }
+
+      // 탭
+      document.querySelectorAll('.learn-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.learn-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          if (tab.dataset.screen === 'review') {
+            document.getElementById('level-select-section').style.display = 'none';
+            document.getElementById('home-progress-section').style.display = 'none';
+            document.getElementById('review-section').style.display = 'block';
+            renderReview();
+          } else {
+            document.getElementById('review-section').style.display = 'none';
+            const prog = loadProgress();
+            if (prog.level) {
+              document.getElementById('home-progress-section').style.display = 'block';
+              document.getElementById('level-select-section').style.display = 'none';
+            } else {
+              document.getElementById('level-select-section').style.display = 'block';
+            }
+          }
+        });
+      });
+    }
+
+    function showLevelSelect() {
+      document.getElementById('home-progress-section').style.display = 'none';
+      document.getElementById('level-select-section').style.display = 'block';
+    }
+
+    function continueLearn() {
+      const prog = loadProgress();
+      currentLevel = prog.level;
+      currentDay = prog.day;
+      currentItemIdx = prog.idx;
+      startLearn();
+    }
+
+    // ── 레벨 선택 ──
+    function selectLevel(level) {
+      currentLevel = level;
+      currentDay = 1;
+      currentItemIdx = 0;
+      saveProgress();
+      startLearn();
+    }
+
+    // ── 진단 테스트 ──
+    function startDiagnosis() {
+      diagnosisIdx = 0;
+      diagnosisScores = { 입문: 0, 기초: 0, 초급: 0, 중급: 0, 고급: 0 };
+      showScreen('screen-diagnosis');
+      renderDiagnosis();
+    }
+
+    function renderDiagnosis() {
+      const q = DIAGNOSIS[diagnosisIdx];
+      document.getElementById('diagnosis-bar').style.width = `${(diagnosisIdx / DIAGNOSIS.length) * 100}%`;
+      document.getElementById('diagnosis-q-num').textContent = `${diagnosisIdx + 1} / ${DIAGNOSIS.length}`;
+      document.getElementById('diagnosis-q').textContent = q.q;
+      document.getElementById('diagnosis-next-wrap').style.display = 'none';
+      const opts = document.getElementById('diagnosis-options');
+      opts.innerHTML = q.options.map((o, i) => `
+        <button class="diagnosis-option" onclick="answerDiagnosis(${i})">${o}</button>
+      `).join('');
+    }
+
+    function answerDiagnosis(idx) {
+      const q = DIAGNOSIS[diagnosisIdx];
+      const btns = document.querySelectorAll('.diagnosis-option');
+      btns.forEach(b => b.disabled = true);
+      btns[q.answer].classList.add('correct');
+      if (idx !== q.answer) btns[idx].classList.add('wrong');
+      else diagnosisScores[q.level]++;
+      document.getElementById('diagnosis-next-wrap').style.display = 'block';
+    }
+
+    function nextDiagnosis() {
+      diagnosisIdx++;
+      if (diagnosisIdx >= DIAGNOSIS.length) {
+        finishDiagnosis();
+      } else {
+        renderDiagnosis();
+      }
+    }
+
+    function finishDiagnosis() {
+      // 맞힌 문제 수로 레벨 결정
+      const total = Object.values(diagnosisScores).reduce((a, b) => a + b, 0);
+      let recommended = '입문';
+      if (total >= 8) recommended = '고급';
+      else if (total >= 6) recommended = '중급';
+      else if (total >= 4) recommended = '초급';
+      else if (total >= 2) recommended = '기초';
+
+      currentLevel = recommended;
+      currentDay = 1;
+      currentItemIdx = 0;
+      saveProgress();
+
+      showScreen('screen-result');
+      document.getElementById('result-emoji').textContent = '🎯';
+      document.getElementById('result-title').textContent = '진단 완료!';
+      document.getElementById('result-score').textContent = `${total}/10`;
+      document.getElementById('result-desc').textContent = `추천 레벨: ${recommended} — 지금 바로 시작해요!`;
+      document.getElementById('btn-next-day').style.display = 'none';
+      document.querySelector('#screen-result .btn-primary-full').textContent = `${recommended} 학습 시작 →`;
+      document.querySelector('#screen-result .btn-primary-full').onclick = () => startLearn();
+    }
+
+    // ── 학습 ──
+    function startLearn() {
+      isQuizMode = false;
+      quizAnswered = false;
+      showScreen('screen-learn');
+      renderLearnCard();
+    }
+
+    function renderLearnCard() {
+      const unit = CURRICULUM[currentLevel]?.units[currentDay - 1];
+      if (!unit) return;
+
+      document.getElementById('learn-level-badge').textContent = currentLevel;
+      document.getElementById('learn-day-badge').textContent = `Day ${currentDay}`;
+      document.getElementById('learn-unit-title').textContent = unit.title;
+
+      if (unit.type === 'review' || currentItemIdx >= unit.items.length) {
+        startDayQuiz();
+        return;
+      }
+
+      const total = unit.items.length;
+      document.getElementById('learn-progress-bar').style.width = `${(currentItemIdx / total) * 100}%`;
+      document.getElementById('learn-progress-text').textContent = `${currentItemIdx + 1}/${total}`;
+
+      const item = unit.items[currentItemIdx];
+      document.getElementById('card-kr').textContent = item.kr;
+      document.getElementById('card-sound').textContent = `[${item.sound}]`;
+      document.getElementById('card-meaning').textContent = item.meaning;
+      document.getElementById('card-example').textContent = `예) ${item.example}`;
+
+      document.getElementById('learn-card').style.display = 'flex';
+      document.getElementById('learn-quiz-section').style.display = 'none';
+      document.getElementById('card-nav').style.display = 'flex';
+
+      saveReview(item);
+      saveProgress();
+    }
+
+    function nextCard() {
+      const unit = CURRICULUM[currentLevel]?.units[currentDay - 1];
+      if (currentItemIdx < unit.items.length - 1) {
+        currentItemIdx++;
+        renderLearnCard();
+      } else {
+        startDayQuiz();
+      }
+    }
+
+    function prevCard() {
+      if (currentItemIdx > 0) {
+        currentItemIdx--;
+        renderLearnCard();
+      }
+    }
+
+    // ── 퀴즈 ──
+    function startDayQuiz() {
+      const unit = CURRICULUM[currentLevel]?.units[currentDay - 1];
+      if (!unit || unit.type === 'review') {
+        finishDay(5, 5);
+        return;
+      }
+      isQuizMode = true;
+      quizScore = 0;
+      currentItemIdx = 0;
+      document.getElementById('learn-card').style.display = 'none';
+      document.getElementById('learn-quiz-section').style.display = 'block';
+      document.getElementById('card-nav').style.display = 'none';
+      renderQuiz();
+    }
+
+    function renderQuiz() {
+      const unit = CURRICULUM[currentLevel]?.units[currentDay - 1];
+      const items = unit.items;
+      if (currentItemIdx >= items.length) {
+        finishDay(quizScore, items.length);
+        return;
+      }
+
+      quizAnswered = false;
+      const item = items[currentItemIdx];
+      const total = items.length;
+      document.getElementById('learn-progress-bar').style.width = `${(currentItemIdx / total) * 100}%`;
+      document.getElementById('learn-progress-text').textContent = `${currentItemIdx + 1}/${total}`;
+
+      document.getElementById('quiz-q').textContent = `"${item.kr}"의 뜻은?`;
+      document.getElementById('quiz-result-msg').style.display = 'none';
+      document.getElementById('quiz-next-wrap').style.display = 'none';
+
+      // 오답 선택지 생성
+      const allItems = unit.items;
+      const wrong = allItems.filter(i => i.kr !== item.kr).sort(() => Math.random() - 0.5).slice(0, 3);
+      const opts = [...wrong.map(w => w.meaning), item.meaning].sort(() => Math.random() - 0.5);
+
+      document.getElementById('quiz-options').innerHTML = opts.map(opt => `
+        <button class="quiz-option" onclick="answerQuiz('${opt.replace(/'/g, "\\'")}', '${item.meaning.replace(/'/g, "\\'")}', this)">${opt}</button>
+      `).join('');
+    }
+
+    function answerQuiz(selected, correct, btn) {
+      if (quizAnswered) return;
+      quizAnswered = true;
+      document.querySelectorAll('.quiz-option').forEach(b => b.disabled = true);
+      const msg = document.getElementById('quiz-result-msg');
+      if (selected === correct) {
+        btn.classList.add('correct');
+        quizScore++;
+        msg.style.display = 'block';
+        msg.style.background = '#ECFDF5';
+        msg.style.color = '#065F46';
+        msg.textContent = '✓ 정답이에요!';
+      } else {
+        btn.classList.add('wrong');
+        document.querySelectorAll('.quiz-option').forEach(b => {
+          if (b.textContent === correct) b.classList.add('correct');
+        });
+        msg.style.display = 'block';
+        msg.style.background = '#FFF1F2';
+        msg.style.color = '#BE123C';
+        msg.textContent = `✗ 정답: ${correct}`;
+      }
+      document.getElementById('quiz-next-wrap').style.display = 'block';
+    }
+
+    function nextQuiz() {
+      currentItemIdx++;
+      renderQuiz();
+    }
+
+    // ── 날 완료 ──
+    function finishDay(score, total) {
+      showScreen('screen-result');
+      const pct = total > 0 ? Math.round((score / total) * 100) : 100;
+      document.getElementById('result-emoji').textContent = pct >= 80 ? '🎉' : pct >= 60 ? '👍' : '💪';
+      document.getElementById('result-title').textContent = `Day ${currentDay} 완료!`;
+      document.getElementById('result-score').textContent = `${score}/${total}`;
+      document.getElementById('result-desc').textContent = pct >= 80 ? '훌륭해요! 다음 날로 넘어가요.' : '조금 더 연습하면 완벽해져요!';
+      document.getElementById('btn-next-day').style.display = 'block';
+      document.querySelector('#screen-result .btn-primary-full').textContent = '홈으로 →';
+      document.querySelector('#screen-result .btn-primary-full').onclick = goHome;
+
+      // 다음 날로 진도 업데이트
+      const maxDays = CURRICULUM[currentLevel].days;
+      if (currentDay < maxDays) {
+        currentDay++;
+      }
+      currentItemIdx = 0;
+      saveProgress();
+    }
+
+    function nextDay() {
+      startLearn();
+    }
+
+    function goHome() {
+      initHome();
+    }
+
+    // ── 복습 카드 ──
+    function renderReview() {
+      const reviews = JSON.parse(localStorage.getItem('dagachi_reviews') || '[]');
+      const wrap = document.getElementById('review-list-wrap');
+      if (reviews.length === 0) {
+        wrap.innerHTML = '<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:32px 0;">아직 저장된 복습 카드가 없어요.<br>학습을 시작하면 자동으로 추가돼요!</p>';
+        return;
+      }
+      wrap.innerHTML = `
+        <p style="font-size:14px;color:var(--text-mid);margin-bottom:16px;">총 ${reviews.length}개의 카드가 저장됐어요</p>
+        <div class="review-list">
+          ${reviews.map(r => `
+            <div class="review-item">
+              <div class="review-kr">${r.kr}</div>
+              <div class="review-info">
+                <div class="review-meaning">${r.meaning}</div>
+                <div class="review-example">${r.example || ''}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // ── 초기화 ──
+    initHome();
+  </script>
+
+</body>
+</html>
