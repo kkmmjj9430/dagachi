@@ -63,10 +63,15 @@
     @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
     .loading-inline { color: var(--text-muted); font-size: 13px; padding: 8px 0; }
 
-    /* 사이드바 레이아웃 */
-    .teacher-layout { display: grid; grid-template-columns: 280px 1fr; gap: 0; min-height: calc(100vh - 60px); }
+    /* 3단 레이아웃 */
+    .teacher-layout { display: grid; grid-template-columns: 260px 1fr 280px; gap: 0; min-height: calc(100vh - 60px); }
     .teacher-sidebar {
       background: var(--white); border-right: 1px solid var(--border);
+      padding: 24px 20px; position: sticky; top: 60px;
+      height: calc(100vh - 60px); overflow-y: auto;
+    }
+    .teacher-sidebar-right {
+      background: var(--white); border-left: 1px solid var(--border);
       padding: 24px 20px; position: sticky; top: 60px;
       height: calc(100vh - 60px); overflow-y: auto;
     }
@@ -229,6 +234,22 @@
 
     </div><!-- result-card 끝 -->
     </div><!-- teacher-main 끝 -->
+
+    <!-- 오른쪽 사이드바: 알림장 -->
+    <div class="teacher-sidebar-right">
+      <div class="sidebar-section-title">📬 알림장 보내기</div>
+      <div style="margin-bottom:10px;">
+        <input type="text" id="notice-title" placeholder="제목" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;color:var(--text-dark);background:var(--bg);margin-bottom:8px;" />
+        <textarea id="notice-content" placeholder="알림장 내용..." style="width:100%;min-height:120px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;color:var(--text-dark);background:var(--bg);resize:vertical;"></textarea>
+        <button id="notice-send-btn" style="width:100%;padding:11px;background:var(--sky);color:#fff;border:none;border-radius:var(--radius-full);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:8px;transition:opacity 0.2s;">보내기 →</button>
+        <div id="notice-sent-msg" style="display:none;margin-top:8px;padding:10px;background:#ECFDF5;border-radius:var(--radius-md);font-size:13px;color:#065F46;text-align:center;">✓ 전송 완료!</div>
+      </div>
+      <div style="margin-top:16px;border-top:1px solid var(--border-soft);padding-top:16px;">
+        <div class="sidebar-section-title">📋 보낸 알림장</div>
+        <div id="sent-notice-list"><p style="color:var(--text-muted);font-size:12px;">불러오는 중...</p></div>
+      </div>
+    </div>
+
   </div><!-- teacher-layout 끝 -->
 
   <footer class="footer">
@@ -238,7 +259,7 @@
   </footer>
 
   <script>
-    const API_KEY = 'AIzaSyCkw8fXemwld30RZeqsqq2822Op91UbwNE';
+    const API_KEY = 'AIzaSyDadRUpXb2yqTiewZJgV-YlSPEKYl6VUYo';
     const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
     let isRequesting = false;
@@ -518,6 +539,64 @@ ${state.lang}권 ${state.grade} 다문화 학생(한국어 ${state.level} 수준
       };
       document.getElementById('db-tips').innerHTML = (tips[state.level] || '').replace(/\n/g, '<br>');
     }
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAb7ZqaM5bjAWRxIqGNJsr6fUuAvw3JMDc",
+      authDomain: "minoai-ed880.firebaseapp.com",
+      databaseURL: "https://minoai-ed880-default-rtdb.firebaseio.com",
+      projectId: "minoai-ed880",
+      storageBucket: "minoai-ed880.firebasestorage.app",
+      messagingSenderId: "270480311999",
+      appId: "1:270480311999:web:f51bb25414b0d44a04a80a",
+      measurementId: "G-W3323YWZW1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // 알림장 전송
+    document.getElementById('notice-send-btn').addEventListener('click', async () => {
+      const title = document.getElementById('notice-title').value.trim();
+      const content = document.getElementById('notice-content').value.trim();
+      if (!title || !content) { alert('제목과 내용을 모두 입력해주세요!'); return; }
+
+      const btn = document.getElementById('notice-send-btn');
+      btn.disabled = true; btn.textContent = '전송 중...';
+
+      await push(ref(db, 'notices'), {
+        title, content,
+        createdAt: Date.now(),
+        date: new Date().toLocaleDateString('ko-KR')
+      });
+
+      document.getElementById('notice-title').value = '';
+      document.getElementById('notice-content').value = '';
+      document.getElementById('notice-sent-msg').style.display = 'block';
+      setTimeout(() => document.getElementById('notice-sent-msg').style.display = 'none', 3000);
+      btn.disabled = false; btn.textContent = '알림장 보내기 →';
+    });
+
+    // 보낸 알림장 목록
+    onValue(ref(db, 'notices'), (snapshot) => {
+      const data = snapshot.val();
+      const list = document.getElementById('sent-notice-list');
+      if (!data) { list.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">아직 보낸 알림장이 없어요</p>'; return; }
+      const notices = Object.entries(data).map(([id,v]) => ({id,...v})).sort((a,b) => b.createdAt - a.createdAt);
+      list.innerHTML = notices.map(n => `
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:14px;font-weight:600;color:var(--text-dark);">${n.title}</span>
+            <span style="font-size:12px;color:var(--text-muted);">${n.date}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-mid);line-height:1.7;">${n.content}</div>
+        </div>
+      `).join('');
+    });
   </script>
 </body>
 </html>
