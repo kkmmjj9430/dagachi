@@ -618,6 +618,16 @@ function toggleFilter(el, type) {
   else activeFilters.add(type);
   const q = document.getElementById('search-input').value.trim();
   renderList(getFilteredCenters(q));
+  
+  // 지도 마커도 필터링
+  CENTERS.forEach((c, i) => {
+    const riskType = getRisk(c.sido);
+    if (activeFilters.has(riskType)) {
+      markers[i].addTo(map);
+    } else {
+      markers[i].remove();
+    }
+  });
 }
 
 function searchCenters() {
