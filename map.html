@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" translate="yes">
+<html lang="ko">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -183,6 +183,14 @@
         <div class="chip safe active" onclick="toggleFilter(this,'low')">🟢 저위험 (~40점)</div>
       </div>
     </div>
+    <div class="filter-section">
+      <div class="search-label" style="margin-bottom:8px">센터 유형 필터</div>
+      <div class="filter-chips">
+        <div class="chip active" id="filter-family" style="background:#EEF2FF;color:#6C8EFF;border:1.5px solid #6C8EFF;" onclick="toggleTypeFilter(this,'family')">🏠 가족센터</div>
+        <div class="chip active" id="filter-multi" style="background:#F3EEFF;color:#A78BFA;border:1.5px solid #A78BFA;" onclick="toggleTypeFilter(this,'multi')">🌏 다문화센터</div>
+      </div>
+    </div>
+
 
     <div class="results-section">
       <div class="results-count" id="results-count">전체 19개 센터 표시 중</div>
@@ -199,7 +207,8 @@
       <div class="legend-item"><div class="legend-dot" style="background:#FB923C"></div>중위험 (40~70점)</div>
       <div class="legend-item"><div class="legend-dot" style="background:#34D399"></div>저위험 (40점 미만)</div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid #E8EEFA;">
-        <div class="legend-item"><div class="legend-dot" style="background:#38BDF8;border:2px solid #0284C7"></div>다문화 지원센터</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#38BDF8;border:2px solid #0284C7"></div>가족센터</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#A78BFA;border:2px solid #7C3AED"></div>다문화가족지원센터</div>
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid #E8EEFA;font-size:10px;color:#94A3B8;line-height:1.6;">
         <div style="font-weight:600;margin-bottom:4px;color:#64748B;">📋 데이터 출처</div>
@@ -233,6 +242,32 @@ const GAP_DATA = [
   {sido:'강원특별자치도', risk:0.0, students:10414, centers:18},
 ];
 
+
+// ── 다문화가족지원센터 (20개) ──
+const MULTI_CENTERS = [
+  {name:'부산진구다문화가족지원센터', addr:'부산 진구 백양대로 160, 2층', sido:'부산광역시', tel:'051-817-4313', lat:35.1584, lng:129.0536},
+  {name:'부산남구다문화가족지원센터', addr:'부산 남구 수영로 356, 2층', sido:'부산광역시', tel:'051-610-2027', lat:35.1379, lng:129.1026},
+  {name:'부산북구다문화가족지원센터', addr:'부산 북구 효열로 76', sido:'부산광역시', tel:'051-365-3408', lat:35.2066, lng:128.9981},
+  {name:'부산해운대구다문화가족지원센터', addr:'부산 해운대구 양운로 91', sido:'부산광역시', tel:'051-702-8002', lat:35.1631, lng:129.1635},
+  {name:'인천부평구다문화가족지원센터', addr:'인천 부평구 열우물로 103', sido:'인천광역시', tel:'032-511-1800', lat:37.4906, lng:126.7228},
+  {name:'대전동구다문화가족지원센터', addr:'대전 동구 동대전로 171', sido:'대전광역시', tel:'042-630-9945', lat:36.3494, lng:127.4312},
+  {name:'대전중구다문화가족지원센터', addr:'대전 중구 대흥로 128', sido:'대전광역시', tel:'042-335-4566', lat:36.3247, lng:127.4189},
+  {name:'경기수원시다문화가족지원센터', addr:'경기 수원시 장안구 송원로 63', sido:'경기도', tel:'031-257-8504', lat:37.2910, lng:127.0108},
+  {name:'경기성남시다문화가족지원센터', addr:'경기 성남시 중원구 광명로 395번길 1', sido:'경기도', tel:'031-740-1175', lat:37.4200, lng:127.1269},
+  {name:'경기고양시다문화가족지원센터', addr:'경기 고양시 일산동구 대산로 27', sido:'경기도', tel:'031-938-9801', lat:37.6638, lng:126.8360},
+  {name:'경기부천시다문화가족지원센터', addr:'경기 부천시 조종로 68번가길 4', sido:'경기도', tel:'032-327-1370', lat:37.5035, lng:126.7660},
+  {name:'경기안산시다문화가족지원센터', addr:'경기 안산시 단원구 화정로 26', sido:'경기도', tel:'031-599-1700', lat:37.3219, lng:126.8309},
+  {name:'충북청원다문화가족지원센터', addr:'충북 청주시 상당구 남일면 단재로 480', sido:'충청북도', tel:'043-293-8887', lat:36.5981, lng:127.5100},
+  {name:'충남천안시다문화가족지원센터', addr:'충남 천안시 동남구 은행길 15-1', sido:'충청남도', tel:'041-558-8653', lat:36.8151, lng:127.1139},
+  {name:'충남당진시다문화가족지원센터', addr:'충남 당진시 시청 1로 38', sido:'충청남도', tel:'041-360-3160', lat:36.8895, lng:126.6457},
+  {name:'전북전주시다문화가족지원센터', addr:'전북 전주시 덕진구 팔달로 336', sido:'전북특별자치도', tel:'063-243-0333', lat:35.8242, lng:127.1379},
+  {name:'경북청송군다문화가족지원센터', addr:'경북 청송군 청송읍 복지타운길 77', sido:'경상북도', tel:'054-870-6790', lat:36.4355, lng:129.0571},
+  {name:'경북영양군다문화가족지원센터', addr:'경북 영양군 영양읍 군민회관길 36', sido:'경상북도', tel:'054-683-5432', lat:36.6669, lng:129.1124},
+  {name:'경북고령군다문화가족지원센터', addr:'경북 고령군 고령읍 왕릉로 30', sido:'경상북도', tel:'054-956-6336', lat:35.7267, lng:128.2633},
+  {name:'경남창원시다문화가족지원센터', addr:'경남 창원시 성산구 대정로20번길 11', sido:'경상남도', tel:'055-225-3951', lat:35.2278, lng:128.6817},
+];
+
+const multiMarkers = [];
 const CENTERS = [
   {name:'서울특별시가족센터', addr:'서울시 중구 소파로4길 6', sido:'서울특별시', tel:'02-318-0227', lat:37.5596, lng:126.9748},
   {name:'강남구가족센터', addr:'서울시 강남구 개포로 617-8', sido:'서울특별시', tel:'02-3412-2222', lat:37.5172, lng:127.0473},
@@ -565,6 +600,30 @@ CENTERS.forEach((c, i) => {
   markers[i] = marker;
 });
 
+// ── 다문화센터 마커 생성 ──
+const multiIcon = (color) => L.divIcon({
+  html: `<div style="width:20px;height:20px;background:${color};border:2px solid #7C3AED;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:9px;">🌏</div>`,
+  className: '', iconSize: [20, 20], iconAnchor: [10, 20], popupAnchor: [0, -22]
+});
+
+MULTI_CENTERS.forEach((c, i) => {
+  const risk = riskBySido[c.sido] || 0;
+  const riskLabel = getRiskLabel(c.sido);
+  const riskClass = getRiskClass(c.sido);
+  const popupHtml = `
+    <div class="popup-inner">
+      <div class="popup-name">${c.name}</div>
+      <div style="font-size:11px;color:#A78BFA;font-weight:600;margin-bottom:4px;">🌏 다문화가족지원센터</div>
+      <div class="popup-addr">📍 ${c.addr}</div>
+      <div class="popup-tel">📞 ${c.tel}</div>
+      <div class="popup-risk ${riskClass}" style="margin-top:8px">지역 공백위험도: ${riskLabel}</div>
+    </div>`;
+  const marker = L.marker([c.lat, c.lng], { icon: multiIcon('#A78BFA') })
+    .addTo(map)
+    .bindPopup(popupHtml, { maxWidth: 280 });
+  multiMarkers[i] = marker;
+});
+
 // ── 사이드바 리스트 렌더 ──
 let activeFilters = new Set(['high','mid','low']);
 let selectedIdx = null;
@@ -612,22 +671,41 @@ function selectCenter(idx) {
   document.querySelector(`[data-idx="${idx}"]`)?.classList.add('selected');
 }
 
+let activeTypeFilters = new Set(['family', 'multi']);
+
+function applyAllFilters() {
+  CENTERS.forEach((c, i) => {
+    const riskOk = activeFilters.has(getRisk(c.sido));
+    const typeOk = activeTypeFilters.has('family');
+    if (markers[i]) {
+      if (riskOk && typeOk) markers[i].addTo(map);
+      else map.removeLayer(markers[i]);
+    }
+  });
+  MULTI_CENTERS.forEach((c, i) => {
+    const riskOk = activeFilters.has(getRisk(c.sido));
+    const typeOk = activeTypeFilters.has('multi');
+    if (multiMarkers[i]) {
+      if (riskOk && typeOk) multiMarkers[i].addTo(map);
+      else map.removeLayer(multiMarkers[i]);
+    }
+  });
+  const q = document.getElementById('search-input').value.trim();
+  renderList(getFilteredCenters(q));
+}
+
 function toggleFilter(el, type) {
   el.classList.toggle('active');
   if (activeFilters.has(type)) activeFilters.delete(type);
   else activeFilters.add(type);
-  const q = document.getElementById('search-input').value.trim();
-  renderList(getFilteredCenters(q));
-  
-  // 지도 마커도 필터링
-  CENTERS.forEach((c, i) => {
-    const riskType = getRisk(c.sido);
-    if (activeFilters.has(riskType)) {
-      markers[i].addTo(map);
-    } else {
-      markers[i].remove();
-    }
-  });
+  applyAllFilters();
+}
+
+function toggleTypeFilter(el, type) {
+  el.classList.toggle('active');
+  if (activeTypeFilters.has(type)) activeTypeFilters.delete(type);
+  else activeTypeFilters.add(type);
+  applyAllFilters();
 }
 
 function searchCenters() {
