@@ -299,7 +299,7 @@ Be warm, encouraging, and use simple language appropriate for the student's leve
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 3000 }
+            generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
           })
         });
 
