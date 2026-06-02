@@ -121,7 +121,7 @@
       </div>
     </div>
 
-    <!-- 탭3: 용어집 -->
+    <!-- 탭2: 용어집 -->
     <div class="tab-content" id="tab-terms">
       <input type="text" class="terms-search" id="terms-search" placeholder="🔍 학교 용어 검색...">
       <div class="terms-grid" id="terms-grid"></div>
@@ -161,13 +161,12 @@
 
   <footer class="footer">
     <div class="footer-logo">다가치</div>
-    <div class="footer-text">© 2026 하늘색팀</div>
+    <div class="footer-text">© 2026 다가치팀</div>
     <div class="footer-badge">제8회 교육 공공데이터 AI활용대회</div>
   </footer>
 
   <script>
-    const API_KEY = 'AIzaSyCkw8fXemwld30RZeqsqq2822Op91UbwNE';
-    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+        const GEMINI_URL = '/api/gemini';
     let selectedLang = '베트남어';
 
     document.getElementById('lang-chips').querySelectorAll('.lang-chip').forEach(chip => {
@@ -198,7 +197,7 @@
       document.getElementById('translate-result-text').innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
       document.getElementById('result-lang-label').textContent = `${selectedLang} 번역 결과`;
       try {
-        const res = await fetch(`${GEMINI_URL}?key=${API_KEY}`, {
+        const res = await fetch(`${GEMINI_URL}`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: `다음 한국어 학교 알림장을 ${selectedLang}로 자연스럽게 번역해주세요. 번역문만 출력하세요.\n\n${text}` }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 1000 } })
         });
@@ -237,7 +236,7 @@
       resultEl.style.display = 'block';
       resultEl.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
       try {
-        const res = await fetch(`${GEMINI_URL}?key=${API_KEY}`, {
+        const res = await fetch(`${GEMINI_URL}`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: `다음 알림장을 ${selectedLang}로 번역해주세요. 번역문만:\n${content}` }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 800 } })
         });
